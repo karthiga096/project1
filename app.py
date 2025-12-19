@@ -31,7 +31,11 @@ def lr_suggestion(marks):
     return "Performance Improving" if model.coef_[0] > 0 else "Needs More Practice"
 
 # ---------------- EMAIL FUNCTION ----------------
-def send_email(sender_email, sender_password, receiver_email, pdf_path):
+def send_email(receiver_email, pdf_path):
+    # Preconfigured sender credentials
+    sender_email = "yourgmail@gmail.com"
+    sender_password = "your_app_password"  # Gmail App Password
+
     try:
         msg = EmailMessage()
         msg["Subject"] = "Student Marksheet"
@@ -42,25 +46,23 @@ def send_email(sender_email, sender_password, receiver_email, pdf_path):
         )
 
         with open(pdf_path, "rb") as f:
-            msg.add_attachment(
-                f.read(),
-                maintype="application",
-                subtype="pdf",
-                filename="Marksheet.pdf"
-            )
+            msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename="Marksheet.pdf")
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, sender_password)
             server.send_message(msg)
 
         return True
-
     except Exception as e:
         st.warning(f"⚠️ Email could not be sent: {e}")
         return False
 
 # ---------------- WHATSAPP FUNCTION ----------------
-def send_whatsapp(twilio_sid, twilio_auth, parent_mobile):
+def send_whatsapp(parent_mobile):
+    # Preconfigured Twilio credentials
+    twilio_sid = "YOUR_TWILIO_SID"
+    twilio_auth = "YOUR_TWILIO_AUTH_TOKEN"
+
     try:
         client = Client(twilio_sid, twilio_auth)
         client.messages.create(
@@ -77,7 +79,6 @@ def send_whatsapp(twilio_sid, twilio_auth, parent_mobile):
 def generate_pdf(name, roll, subjects, marks):
     pdf = FPDF()
     pdf.add_page()
-
     pdf.set_font("Arial", "B", 16)
     pdf.cell(0, 10, "COLLEGE MARKSHEET", ln=True, align="C")
     pdf.ln(8)
@@ -121,13 +122,6 @@ roll = st.text_input("Roll Number")
 parent_mobile = st.text_input("Parent WhatsApp Number")
 parent_email = st.text_input("Parent Email")
 
-# Sender credentials (Gmail & Twilio)
-st.subheader("Email & Twilio Credentials for sending marksheet")
-sender_email = st.text_input("Your Gmail (Sender Email)")
-sender_password = st.text_input("Gmail App Password", type="password")
-twilio_sid = st.text_input("Twilio SID")
-twilio_auth = st.text_input("Twilio Auth Token", type="password")
-
 # Subject marks
 st.subheader("Enter Subject Marks")
 subjects = ["Maths", "Science", "English", "History", "Computer", "Physics"]
@@ -135,15 +129,15 @@ marks = [st.number_input(sub, min_value=0, max_value=100) for sub in subjects]
 
 # Generate button
 if st.button("Generate Marksheet"):
-    if name and roll and parent_mobile and parent_email and sender_email and sender_password and twilio_sid and twilio_auth:
+    if name and roll and parent_mobile and parent_email:
         pdf_path = generate_pdf(name, roll, subjects, marks)
 
-        # Send Email & WhatsApp
-        email_status = send_email(sender_email, sender_password, parent_email, pdf_path)
-        whatsapp_status = send_whatsapp(twilio_sid, twilio_auth, parent_mobile)
+        email_status = send_email(parent_email, pdf_path)
+        whatsapp_status = send_whatsapp(parent_mobile)
 
         st.success("✅ Marksheet Generated Successfully")
 
+        # Download PDF
         with open(pdf_path, "rb") as f:
             st.download_button(
                 "📥 Download Marksheet PDF",
@@ -156,6 +150,5 @@ if st.button("Generate Marksheet"):
             st.info(f"📧 Email sent to: {parent_email}")
         if whatsapp_status:
             st.info(f"📱 WhatsApp message sent to: {parent_mobile}")
-
     else:
-        st.error("❌ Please fill all fields including Gmail & Twilio credentials")
+        st.error("❌ Please fill all fields")
