@@ -48,7 +48,8 @@ def send_email(sender_email, sender_password, receiver_email, pdf_path):
                 filename="Marksheet.pdf"
             )
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        # Outlook SMTP server (no app password needed)
+        with smtplib.SMTP_SSL("smtp.office365.com", 465) as server:
             server.login(sender_email, sender_password)
             server.send_message(msg)
 
@@ -102,13 +103,14 @@ st.title("🎓 Smart Marksheet Generation using ML")
 name = st.text_input("Student Name")
 roll = st.text_input("Roll Number")
 
-# Parent email
+# Parent contact info
 parent_email = st.text_input("Parent Email")
+parent_mobile = st.text_input("Parent Mobile Number (Optional for display)")
 
-# Sender Gmail credentials
+# Sender credentials (Outlook)
 st.subheader("Email Credentials for sending marksheet")
-sender_email = st.text_input("Your Gmail (Sender Email)")
-sender_password = st.text_input("Gmail App Password", type="password")
+sender_email = st.text_input("Your Outlook Email (Sender)", "")
+sender_password = st.text_input("Outlook Password", type="password")
 
 # Subject marks
 st.subheader("Enter Subject Marks")
@@ -120,10 +122,12 @@ if st.button("Generate Marksheet"):
     if name and roll and parent_email and sender_email and sender_password:
         pdf_path = generate_pdf(name, roll, subjects, marks)
 
+        # Send Email
         email_status = send_email(sender_email, sender_password, parent_email, pdf_path)
 
         st.success("✅ Marksheet Generated Successfully")
 
+        # Show download button
         with open(pdf_path, "rb") as f:
             st.download_button(
                 "📥 Download Marksheet PDF",
@@ -132,8 +136,11 @@ if st.button("Generate Marksheet"):
                 mime="application/pdf"
             )
 
+        # Display email & optional mobile info
         if email_status:
             st.info(f"📧 Email sent to: {parent_email}")
+        if parent_mobile:
+            st.info(f"📱 Parent Mobile: {parent_mobile}")
 
     else:
-        st.error("❌ Please fill all fields including Gmail credentials")
+        st.error("❌ Please fill all required fields including Outlook credentials")
