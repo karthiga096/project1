@@ -26,18 +26,13 @@ def grade(mark):
 def lr_suggestion(marks):
     X = np.array(range(1, 7)).reshape(-1, 1)
     y = np.array(marks)
-
     model = LinearRegression()
     model.fit(X, y)
-
     return "Performance Improving" if model.coef_[0] > 0 else "Needs More Practice"
 
 # ---------------- EMAIL FUNCTION ----------------
-def send_email(receiver_email, pdf_path):
+def send_email(sender_email, sender_password, receiver_email, pdf_path):
     try:
-        sender_email = st.secrets["EMAIL"]
-        sender_password = st.secrets["EMAIL_PASSWORD"]
-
         msg = EmailMessage()
         msg["Subject"] = "Student Marksheet"
         msg["From"] = sender_email
@@ -61,27 +56,21 @@ def send_email(receiver_email, pdf_path):
         return True
 
     except Exception as e:
-        st.warning("⚠️ Email could not be sent")
+        st.warning(f"⚠️ Email could not be sent: {e}")
         return False
 
 # ---------------- WHATSAPP FUNCTION ----------------
-def send_whatsapp(mobile):
+def send_whatsapp(twilio_sid, twilio_auth, parent_mobile):
     try:
-        client = Client(
-            st.secrets["TWILIO_SID"],
-            st.secrets["TWILIO_AUTH"]
-        )
-
+        client = Client(twilio_sid, twilio_auth)
         client.messages.create(
-            from_="whatsapp:+14155238886",
-            to=f"whatsapp:+91{mobile}",
+            from_="whatsapp:+14155238886",  # Twilio sandbox
+            to=f"whatsapp:+91{parent_mobile}",
             body="Your child’s marksheet has been generated and sent to your email."
         )
-
         return True
-
-    except Exception:
-        st.warning("⚠️ WhatsApp message failed")
+    except Exception as e:
+        st.warning(f"⚠️ WhatsApp message failed: {e}")
         return False
 
 # ---------------- PDF GENERATION ----------------
@@ -107,7 +96,6 @@ def generate_pdf(name, roll, subjects, marks):
     pdf.ln()
 
     suggestion = lr_suggestion(marks)
-
     for i in range(6):
         g, r = grade(marks[i])
         pdf.set_font("Arial", "", 11)
@@ -125,22 +113,34 @@ def generate_pdf(name, roll, subjects, marks):
 # ---------------- STREAMLIT UI ----------------
 st.title("🎓 Smart Marksheet Generation using ML")
 
+# Student info
 name = st.text_input("Student Name")
 roll = st.text_input("Roll Number")
+
+# Parent contact info
 parent_mobile = st.text_input("Parent WhatsApp Number")
 parent_email = st.text_input("Parent Email")
 
-st.subheader("Enter Subject Marks")
+# Sender credentials (Gmail & Twilio)
+st.subheader("Email & Twilio Credentials for sending marksheet")
+sender_email = st.text_input("Your Gmail (Sender Email)")
+sender_password = st.text_input("Gmail App Password", type="password")
+twilio_sid = st.text_input("Twilio SID")
+twilio_auth = st.text_input("Twilio Auth Token", type="password")
 
+# Subject marks
+st.subheader("Enter Subject Marks")
 subjects = ["Maths", "Science", "English", "History", "Computer", "Physics"]
 marks = [st.number_input(sub, min_value=0, max_value=100) for sub in subjects]
 
+# Generate button
 if st.button("Generate Marksheet"):
-    if name and roll and parent_mobile and parent_email:
+    if name and roll and parent_mobile and parent_email and sender_email and sender_password and twilio_sid and twilio_auth:
         pdf_path = generate_pdf(name, roll, subjects, marks)
 
-        email_status = send_email(parent_email, pdf_path)
-        whatsapp_status = send_whatsapp(parent_mobile)
+        # Send Email & WhatsApp
+        email_status = send_email(sender_email, sender_password, parent_email, pdf_path)
+        whatsapp_status = send_whatsapp(twilio_sid, twilio_auth, parent_mobile)
 
         st.success("✅ Marksheet Generated Successfully")
 
@@ -158,4 +158,4 @@ if st.button("Generate Marksheet"):
             st.info(f"📱 WhatsApp message sent to: {parent_mobile}")
 
     else:
-        st.error("❌ Please fill all fields")
+        st.error("❌ Please fill all fields including Gmail & Twilio credentials")
