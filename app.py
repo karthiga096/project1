@@ -30,48 +30,59 @@ def lr_suggestion(marks):
     model = LinearRegression()
     model.fit(X, y)
 
-    if model.coef_[0] > 0:
-        return "Performance Improving"
-    else:
-        return "Needs More Practice"
+    return "Performance Improving" if model.coef_[0] > 0 else "Needs More Practice"
 
 # ---------------- EMAIL FUNCTION ----------------
 def send_email(receiver_email, pdf_path):
-    sender_email = "yourgmail@gmail.com"
-    sender_password = "your_app_password"  # Gmail App Password
+    try:
+        sender_email = st.secrets["EMAIL"]
+        sender_password = st.secrets["EMAIL_PASSWORD"]
 
-    msg = EmailMessage()
-    msg["Subject"] = "Student Marksheet"
-    msg["From"] = sender_email
-    msg["To"] = receiver_email
-    msg.set_content(
-        "Dear Parent,\n\nPlease find the attached student marksheet.\n\nRegards,\nCollege"
-    )
-
-    with open(pdf_path, "rb") as f:
-        msg.add_attachment(
-            f.read(),
-            maintype="application",
-            subtype="pdf",
-            filename="Marksheet.pdf"
+        msg = EmailMessage()
+        msg["Subject"] = "Student Marksheet"
+        msg["From"] = sender_email
+        msg["To"] = receiver_email
+        msg.set_content(
+            "Dear Parent,\n\nPlease find the attached student marksheet.\n\nRegards,\nCollege"
         )
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
+        with open(pdf_path, "rb") as f:
+            msg.add_attachment(
+                f.read(),
+                maintype="application",
+                subtype="pdf",
+                filename="Marksheet.pdf"
+            )
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+
+        return True
+
+    except Exception as e:
+        st.warning("⚠️ Email could not be sent")
+        return False
 
 # ---------------- WHATSAPP FUNCTION ----------------
 def send_whatsapp(mobile):
-    account_sid = "YOUR_TWILIO_SID"
-    auth_token = "YOUR_TWILIO_AUTH_TOKEN"
+    try:
+        client = Client(
+            st.secrets["TWILIO_SID"],
+            st.secrets["TWILIO_AUTH"]
+        )
 
-    client = Client(account_sid, auth_token)
+        client.messages.create(
+            from_="whatsapp:+14155238886",
+            to=f"whatsapp:+91{mobile}",
+            body="Your child’s marksheet has been generated and sent to your email."
+        )
 
-    client.messages.create(
-        from_="whatsapp:+14155238886",  # Twilio sandbox
-        to=f"whatsapp:+91{mobile}",
-        body="Your child’s marksheet has been generated and sent to your email."
-    )
+        return True
+
+    except Exception:
+        st.warning("⚠️ WhatsApp message failed")
+        return False
 
 # ---------------- PDF GENERATION ----------------
 def generate_pdf(name, roll, subjects, marks):
@@ -128,10 +139,10 @@ if st.button("Generate Marksheet"):
     if name and roll and parent_mobile and parent_email:
         pdf_path = generate_pdf(name, roll, subjects, marks)
 
-        send_email(parent_email, pdf_path)
-        send_whatsapp(parent_mobile)
+        email_status = send_email(parent_email, pdf_path)
+        whatsapp_status = send_whatsapp(parent_mobile)
 
-        st.success("✅ Marksheet Generated & Sent Successfully")
+        st.success("✅ Marksheet Generated Successfully")
 
         with open(pdf_path, "rb") as f:
             st.download_button(
@@ -141,9 +152,10 @@ if st.button("Generate Marksheet"):
                 mime="application/pdf"
             )
 
-        st.info(f"📧 Email sent to: {parent_email}")
-        st.info(f"📱 WhatsApp message sent to: {parent_mobile}")
+        if email_status:
+            st.info(f"📧 Email sent to: {parent_email}")
+        if whatsapp_status:
+            st.info(f"📱 WhatsApp message sent to: {parent_mobile}")
 
     else:
         st.error("❌ Please fill all fields")
-
