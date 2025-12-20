@@ -2,17 +2,16 @@ import streamlit as st
 from fpdf import FPDF
 import pandas as pd
 from PIL import Image
-import io
 
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 
-# ----------------- Custom CSS for High-Contrast Theme -----------------
+# ----------------- Custom CSS for High-Contrast White Boxes -----------------
 st.markdown(
     """
     <style>
     .stApp {
-        background: linear-gradient(to right, #ffffff, #e0e7ff);
+        background-color: #ffffff;
         color: black;
     }
     h1, h2, h3, h4, h5, h6, .stHeader {
@@ -21,6 +20,7 @@ st.markdown(
     }
     .stTable td, .stTable th {
         color: black;
+        background-color: #ffffff;
     }
     .stButton>button {
         background-color: #4CAF50;
@@ -30,10 +30,17 @@ st.markdown(
         padding: 8px 16px;
     }
     .stTextInput>div>div>input, .stNumberInput>div>div>input {
-        border: 2px solid #4CAF50;
+        border: 2px solid #000000;
         border-radius: 5px;
+        background-color: #ffffff;
         color: black;
         font-weight: bold;
+    }
+    .stSelectbox>div>div>select {
+        background-color: #ffffff;
+        color: black;
+        border: 2px solid #000000;
+        border-radius: 5px;
     }
     </style>
     """,
@@ -63,9 +70,9 @@ def suggestion(mark):
     else: return "Failed, must retake"
 
 def color_code(mark):
-    if mark >= 60: return (144, 238, 144)  # Green
-    elif mark >= 35: return (255, 255, 102) # Yellow
-    else: return (255, 102, 102)           # Red
+    if mark >= 60: return (255, 255, 255)  # White background for all marks
+    elif mark >= 35: return (255, 255, 255)
+    else: return (255, 255, 255)
 
 # ----------------- Subjects -----------------
 school_groups = {
@@ -148,7 +155,7 @@ if st.button("Generate Marksheet"):
         image = Image.open(photo_file)
         image_path = "temp_photo.png"
         image.save(image_path)
-        pdf.image(image_path, x=160, y=10, w=30, h=30)  # top-right corner
+        pdf.image(image_path, x=160, y=10, w=30, h=30)
 
     pdf.set_font("Arial", '', 12)
     pdf.cell(0, 8, f"Name: {name}", ln=True)
@@ -159,7 +166,8 @@ if st.button("Generate Marksheet"):
     pdf.ln(5)
 
     # Table Header
-    pdf.set_fill_color(200,200,200)
+    pdf.set_fill_color(255,255,255)
+    pdf.set_text_color(0,0,0)
     pdf.cell(60, 8, "Subject", 1, 0, 'C', fill=True)
     pdf.cell(30, 8, "Marks", 1, 0, 'C', fill=True)
     pdf.cell(30, 8, "Grade", 1, 0, 'C', fill=True)
@@ -168,9 +176,9 @@ if st.button("Generate Marksheet"):
 
     # Table Rows
     for sub, mark in marks.items():
-        r,g,b = color_code(mark)
-        pdf.set_fill_color(r,g,b)
-        pdf.cell(60, 8, sub, 1, 0, 'C')
+        pdf.set_fill_color(255,255,255)
+        pdf.set_text_color(0,0,0)
+        pdf.cell(60, 8, sub, 1, 0, 'C', fill=True)
         pdf.cell(30, 8, str(mark), 1, 0, 'C', fill=True)
         pdf.cell(30, 8, grade(mark), 1, 0, 'C', fill=True)
         pdf.cell(30, 8, pass_fail(mark), 1, 0, 'C', fill=True)
