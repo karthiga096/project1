@@ -1,71 +1,62 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from fpdf import FPDF
-from PIL import Image
-import io
 
-# ------------------ PAGE CONFIG ------------------
-st.set_page_config(page_title="Mark Generation Portal", layout="wide")
+# ---------------- PAGE THEME ----------------
+st.set_page_config(
+    page_title="Marksheet Portal",
+    layout="wide"
+)
 
-st.title("🎓 School & College Student Mark Generation Portal")
+st.markdown("""
+<style>
+body {background-color: #f4f6f9;}
+.big-title {font-size:40px; font-weight:bold; color:#2E86C1;}
+.section {background-color:white; padding:20px; border-radius:12px; margin-bottom:20px;}
+.sub-title {color:#117864; font-size:22px; font-weight:bold;}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("<div class='big-title'>🎓 School & College Marksheet Generation Portal</div>", unsafe_allow_html=True)
 st.markdown("---")
 
-# ------------------ UTILITY FUNCTIONS ------------------
+# ---------------- BASIC DETAILS ----------------
+st.markdown("<div class='section'>", unsafe_allow_html=True)
+st.markdown("<div class='sub-title'>📌 Student Details</div>", unsafe_allow_html=True)
 
-def get_grade(mark):
-    if mark >= 90:
-        return "A+"
-    elif mark >= 80:
-        return "A"
-    elif mark >= 70:
-        return "B+"
-    elif mark >= 60:
-        return "B"
-    elif mark >= 50:
-        return "C"
-    else:
-        return "D"
+student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
+name = st.text_input("Student Name")
+roll = st.text_input("Roll Number")
+attendance = st.slider("Attendance Percentage", 0, 100, 75)
+parent_mobile = st.text_input("Parent Mobile Number")
+parent_email = st.text_input("Parent Email")
 
-def get_result(mark):
-    return "Pass" if mark >= 50 else "Fail"
+st.markdown("</div>", unsafe_allow_html=True)
 
-def get_color(mark):
-    if mark >= 75:
-        return "Good"
-    elif mark >= 50:
-        return "Average"
-    else:
-        return "Fail"
+# ---------------- FUNCTIONS ----------------
+def grade(m):
+    if m >= 90: return "A+"
+    if m >= 80: return "A"
+    if m >= 70: return "B+"
+    if m >= 60: return "B"
+    if m >= 50: return "C"
+    return "D"
 
-def get_suggestion(mark):
-    if mark >= 75:
-        return "Excellent performance"
-    elif mark >= 50:
-        return "Can improve"
-    else:
-        return "Needs special attention"
+def result(m):
+    return "Pass" if m >= 50 else "Fail"
 
-# ------------------ INPUT SECTION ------------------
+def suggestion(m):
+    if m >= 75: return "Excellent"
+    if m >= 50: return "Need Improvement"
+    return "Work Hard"
 
-st.sidebar.header("📌 Student Details")
-
-student_type = st.sidebar.selectbox("Select Student Type", ["School Student", "College Student"])
-
-name = st.sidebar.text_input("Student Name")
-roll = st.sidebar.text_input("Roll Number")
-attendance = st.sidebar.slider("Attendance Percentage", 0, 100, 75)
-parent_mobile = st.sidebar.text_input("Parent Mobile Number")
-parent_email = st.sidebar.text_input("Parent Email")
-
-# ------------------ SCHOOL STUDENT ------------------
-
+# ================== SCHOOL ==================
 if student_type == "School Student":
 
-    group = st.sidebar.selectbox(
-        "Select Group",
-        ["Biology", "Computer Science", "Commerce", "History / Arts"]
-    )
+    st.markdown("<div class='section'>", unsafe_allow_html=True)
+    st.markdown("<div class='sub-title'>🏫 School Student Details</div>", unsafe_allow_html=True)
+
+    group = st.selectbox("Select Group", ["Biology", "Computer Science", "Commerce", "History / Arts"])
 
     subjects_map = {
         "Biology": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Biology"],
@@ -77,28 +68,27 @@ if student_type == "School Student":
     subjects = subjects_map[group]
     marks = []
 
-    st.subheader("✏️ Enter Subject Marks")
+    st.markdown("### ✏️ Enter Marks")
+    for s in subjects:
+        marks.append(st.number_input(s, 0, 100, 50))
 
-    for sub in subjects:
-        marks.append(st.number_input(f"{sub} Marks", 0, 100, 50))
-
-    if st.button("📊 Generate Marksheet"):
+    if st.button("📊 Generate School Marksheet"):
         df = pd.DataFrame({
             "Subject": subjects,
             "Marks": marks,
-            "Result": [get_result(m) for m in marks],
-            "Performance": [get_color(m) for m in marks],
-            "Suggestion": [get_suggestion(m) for m in marks]
+            "Grade": [grade(m) for m in marks],
+            "Result": [result(m) for m in marks],
+            "Suggestion": [suggestion(m) for m in marks]
         })
 
-        total = sum(marks)
-        average = round(total / 6, 2)
-
-        st.success("Marksheet Generated Successfully")
+        st.success("Marksheet Generated")
         st.dataframe(df)
 
+        total = sum(marks)
+        avg = round(total / 6, 2)
+
         st.info(f"Total Marks: {total}")
-        st.info(f"Average Marks: {average}")
+        st.info(f"Average Marks: {avg}")
 
         if group in ["Biology", "Computer Science"]:
             eng_cutoff = marks[2] + (marks[3] + marks[4]) / 2
@@ -108,11 +98,11 @@ if student_type == "School Student":
             med_cutoff = marks[5] + (marks[3] + marks[4]) / 2
             st.warning(f"Medical Cutoff: {round(med_cutoff,2)}")
 
-        # ------------------ PDF GENERATION ------------------
+        # PDF
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, "School Student Marksheet", ln=True, align="C")
+        pdf.cell(0, 10, "School Marksheet", ln=True, align="C")
 
         pdf.set_font("Arial", size=12)
         pdf.cell(0, 8, f"Name: {name}", ln=True)
@@ -121,82 +111,57 @@ if student_type == "School Student":
         pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True)
         pdf.ln(5)
 
-        pdf.set_font("Arial", "B", 11)
-        for col in df.columns:
-            pdf.cell(38, 8, col, border=1)
-        pdf.ln()
-
-        pdf.set_font("Arial", size=10)
-        for _, row in df.iterrows():
-            for item in row:
-                pdf.cell(38, 8, str(item), border=1)
-            pdf.ln()
+        for i in df.itertuples():
+            pdf.cell(0, 8, f"{i.Subject} - {i.Marks} - {i.Grade} - {i.Result}", ln=True)
 
         pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
-        st.download_button(
-            label="📥 Download Marksheet PDF",
-            data=pdf_bytes,
-            file_name="School_Marksheet.pdf",
-            mime="application/pdf"
-        )
+        st.download_button("📥 Download PDF", pdf_bytes, "School_Marksheet.pdf")
 
-# ------------------ COLLEGE STUDENT ------------------
+    st.markdown("</div>", unsafe_allow_html=True)
 
+# ================== COLLEGE ==================
 if student_type == "College Student":
 
-    dept = st.sidebar.selectbox("Select Department", ["CSE", "ECE", "Biotechnology"])
-    semester = st.sidebar.selectbox("Select Semester", [f"Semester {i}" for i in range(1, 9)])
+    st.markdown("<div class='section'>", unsafe_allow_html=True)
+    st.markdown("<div class='sub-title'>🏛 College Student Details</div>", unsafe_allow_html=True)
 
-    subjects = [f"Subject {i}" for i in range(1, 7)]
+    dept = st.selectbox("Select Department", ["CSE", "ECE", "Biotechnology"])
+    sem = st.selectbox("Select Semester", [f"Semester {i}" for i in range(1,9)])
+
     marks = []
+    st.markdown("### ✏️ Enter Marks")
+    for i in range(1,7):
+        marks.append(st.number_input(f"Subject {i}", 0, 100, 50))
 
-    st.subheader("✏️ Enter Subject Marks")
-
-    for sub in subjects:
-        marks.append(st.number_input(f"{sub} Marks", 0, 100, 50))
-
-    if st.button("📊 Generate Marksheet"):
+    if st.button("📊 Generate College Marksheet"):
         df = pd.DataFrame({
-            "Subject": subjects,
+            "Subject": [f"Subject {i}" for i in range(1,7)],
             "Marks": marks,
-            "Grade": [get_grade(m) for m in marks],
-            "Result": [get_result(m) for m in marks],
-            "Suggestion": [get_suggestion(m) for m in marks]
+            "Grade": [grade(m) for m in marks],
+            "Result": [result(m) for m in marks],
+            "Suggestion": [suggestion(m) for m in marks]
         })
 
-        st.success("Marksheet Generated Successfully")
+        st.success("Marksheet Generated")
         st.dataframe(df)
 
-        # ------------------ PDF ------------------
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, "College Student Marksheet", ln=True, align="C")
+        pdf.cell(0, 10, "College Marksheet", ln=True, align="C")
 
         pdf.set_font("Arial", size=12)
         pdf.cell(0, 8, f"Name: {name}", ln=True)
         pdf.cell(0, 8, f"Roll No: {roll}", ln=True)
         pdf.cell(0, 8, f"Department: {dept}", ln=True)
-        pdf.cell(0, 8, f"{semester}", ln=True)
-        pdf.ln(5)
+        pdf.cell(0, 8, f"{sem}", ln=True)
 
-        pdf.set_font("Arial", "B", 11)
-        for col in df.columns:
-            pdf.cell(38, 8, col, border=1)
-        pdf.ln()
-
-        pdf.set_font("Arial", size=10)
-        for _, row in df.iterrows():
-            for item in row:
-                pdf.cell(38, 8, str(item), border=1)
-            pdf.ln()
+        for i in df.itertuples():
+            pdf.cell(0, 8, f"{i.Subject} - {i.Marks} - {i.Grade} - {i.Result}", ln=True)
 
         pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
-        st.download_button(
-            label="📥 Download Marksheet PDF",
-            data=pdf_bytes,
-            file_name="College_Marksheet.pdf",
-            mime="application/pdf"
-        )
+        st.download_button("📥 Download PDF", pdf_bytes, "College_Marksheet.pdf")
+
+    st.markdown("</div>", unsafe_allow_html=True)
