@@ -124,7 +124,7 @@ if st.button("Generate Marksheet"):
     pdf = FPDF()
     pdf.add_page()
 
-    # Add Unicode font for emojis
+    # Unicode font for emojis
     pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
     pdf.set_font("DejaVu", 'B', 16)
 
@@ -141,7 +141,7 @@ if st.button("Generate Marksheet"):
 
     pdf.set_font("DejaVu", '', 12)
     pdf.set_text_color(0,0,0)
-    pdf.set_fill_color(255,255,255)
+
     pdf.cell(0, 8, f"Name: {name}", ln=True, fill=True)
     pdf.cell(0, 8, f"Roll Number: {roll}", ln=True, fill=True)
     pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True, fill=True)
@@ -150,6 +150,7 @@ if st.button("Generate Marksheet"):
     pdf.ln(5)
 
     # Table Header
+    pdf.set_fill_color(200,200,200)
     pdf.cell(50, 8, "Subject", 1, 0, 'C', fill=True)
     pdf.cell(25, 8, "Marks", 1, 0, 'C', fill=True)
     pdf.cell(25, 8, "Grade", 1, 0, 'C', fill=True)
@@ -157,8 +158,17 @@ if st.button("Generate Marksheet"):
     pdf.cell(45, 8, "Suggestion", 1, 0, 'C', fill=True)
     pdf.cell(15, 8, "Emoji", 1, 1, 'C', fill=True)
 
-    # Table Rows
+    # Table Rows with colored boxes
     for sub, mark in marks.items():
+        # Set cell color based on marks
+        if mark >= 75:
+            pdf.set_fill_color(144, 238, 144)  # Light green
+        elif mark >= 50:
+            pdf.set_fill_color(255, 255, 153)  # Light yellow
+        else:
+            pdf.set_fill_color(255, 160, 122)  # Light red
+
+        pdf.set_text_color(0,0,0)  # letters always black
         pdf.cell(50, 8, sub, 1, 0, 'C', fill=True)
         pdf.cell(25, 8, str(mark), 1, 0, 'C', fill=True)
         pdf.cell(25, 8, grade(mark), 1, 0, 'C', fill=True)
