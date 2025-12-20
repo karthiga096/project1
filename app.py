@@ -12,16 +12,15 @@ import os
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(
-    page_title="Student Mark Generation Portal",
+    page_title="Student Marksheet Portal",
     page_icon="🎓",
     layout="wide"
 )
 
-# -------------------- HEADER --------------------
-st.markdown("<h1 style='text-align:center;color:#1f4e79;'>🎓 Student Mark Generation Portal</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;color:#1f4e79;'>🎓 Student Marksheet Generator</h1>", unsafe_allow_html=True)
 
-# -------------------- COLLECT STUDENT & PARENT DETAILS --------------------
-with st.expander("Enter Student Details"):
+# -------------------- STUDENT DETAILS --------------------
+with st.expander("Student Details"):
     school_name = st.text_input("School / College Name")
     student_name = st.text_input("Student Name")
     register_no = st.text_input("Register Number")
@@ -30,8 +29,9 @@ with st.expander("Enter Student Details"):
     mother_name = st.text_input("Mother Name")
     attendance = st.number_input("Attendance Percentage", 0, 100)
     photo = st.file_uploader("Upload Student Photo", type=["png","jpg","jpeg"])
-    
-with st.expander("Enter Parent Contact Details"):
+
+# -------------------- PARENT DETAILS --------------------
+with st.expander("Parent Details"):
     parent_email = st.text_input("Parent Email")
     parent_mobile = st.text_input("Parent Mobile Number")
 
@@ -66,7 +66,7 @@ if student_type == "College Student":
     for sub in subjects:
         marks[sub] = st.number_input(f"{sub} Marks", 0, 100)
 
-# -------------------- GRADE LOGIC --------------------
+# -------------------- GRADE FUNCTION --------------------
 def grade(mark):
     if mark >=90: return "A+", colors.green, "Pass"
     elif mark >=80: return "A", colors.green, "Pass"
@@ -78,16 +78,16 @@ def grade(mark):
 # -------------------- GENERATE MARKSHEET --------------------
 if st.button("Generate Marksheet & PDF"):
     total = sum(marks.values())
-    average = total / len(marks)
+    average = total / len(subjects)
     
-    # -------------------- DISPLAY MARKS TABLE --------------------
+    # -------------------- DISPLAY TABLE IN APP --------------------
     table_display = [["Subject","Marks","Grade","Pass/Fail"]]
     for sub in subjects:
         g, c, status = grade(marks[sub])
         table_display.append([sub, marks[sub], g, status])
     st.table(table_display)
     
-    # -------------------- CREATE PDF --------------------
+    # -------------------- PDF GENERATION --------------------
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
         pdf_path = tmp_pdf.name
     
@@ -189,7 +189,7 @@ if st.button("Generate Marksheet & PDF"):
                 )
                 message.attachment = attachedFile
                 sg = SendGridAPIClient(sg_api_key)
-                response = sg.send(message)
+                sg.send(message)
                 st.success(f"✅ Email sent to {parent_email}")
             except Exception as e:
                 st.error(f"Error sending email: {e}")
