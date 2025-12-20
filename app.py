@@ -6,59 +6,34 @@ from PIL import Image
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 
-# ----------------- Custom CSS for visibility -----------------
+# ----------------- Custom CSS -----------------
 st.markdown(
     """
     <style>
-    /* App background */
-    .stApp {
-        background-color: #E6F2FF;  /* light blue background, change as needed */
-        color: black;
-    }
-
-    /* Headings */
-    h1, h2, h3, h4, h5, h6 {
-        color: black;
-        font-weight: bold;
-    }
-
-    /* Input labels */
-    label, .stMarkdown p, .stTextInput label, .stNumberInput label {
-        color: black !important;
-        font-weight: bold;
-    }
-
-    /* Input boxes */
+    .stApp {background-color: #E6F2FF; color: black;}
+    h1, h2, h3, h4, h5, h6 {color: black; font-weight: bold;}
+    label, .stMarkdown p, .stTextInput label, .stNumberInput label {color: black !important; font-weight: bold;}
     .stTextInput>div>div>input,
     .stNumberInput>div>div>input,
     .stSelectbox>div>div>select,
-    .stFileUploader>div>div>input {
-        color: black !important;
-        background-color: white !important;
-        border: 2px solid #000000 !important;
-        font-weight: bold;
-    }
-
-    /* Tables */
-    .stTable td, .stTable th {
-        color: black !important;
-        background-color: white !important;
-    }
-
-    /* Buttons */
-    .stButton>button {
-        background-color: #4CAF50;
-        color: white;
-        font-weight: bold;
-        border-radius: 10px;
-        padding: 8px 16px;
-    }
+    .stFileUploader>div>div>input {color: black !important; background-color: white !important; border: 2px solid #000000 !important; font-weight: bold;}
+    .stTable td, .stTable th {color: black !important; background-color: white !important;}
+    .stButton>button {background-color: #4CAF50; color: white; font-weight: bold; border-radius: 10px; padding: 8px 16px;}
     </style>
-    """,
-    unsafe_allow_html=True
+    """, unsafe_allow_html=True
 )
 
 st.title("🎓 Student Mark Generation Portal")
+
+# ----------------- Inputs -----------------
+college_name = st.text_input("Enter College/School Name", "My College")
+student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
+name = st.text_input("Student Name")
+roll = st.text_input("Roll Number")
+attendance = st.number_input("Attendance Percentage", 0, 100, 90)
+parent_mobile = st.text_input("Parent Mobile Number")
+parent_email = st.text_input("Parent Email")
+photo_file = st.file_uploader("Upload Student Photo", type=["png", "jpg", "jpeg"])
 
 # ----------------- Helper Functions -----------------
 def grade(mark):
@@ -75,10 +50,13 @@ def pass_fail(mark):
 
 def suggestion(mark):
     if mark >= 75: return "Excellent performance"
-    elif mark >= 60: return "Good, keep improving"
     elif mark >= 50: return "Average, work harder"
-    elif mark >= 35: return "Needs improvement"
     else: return "Failed, must retake"
+
+def emoji_feedback(mark):
+    if mark >= 75: return "😄"
+    elif mark >= 50: return "😐"
+    else: return "😢"
 
 # ----------------- Subjects -----------------
 school_groups = {
@@ -96,15 +74,6 @@ college_departments = {
     "Biotechnology": {"Semester 1": ["Biology", "Chemistry", "Maths", "Physics", "English", "Lab"],
                       "Semester 2": ["Genetics", "Microbiology", "Chemistry 2", "Maths 2", "English", "Lab"]}
 }
-
-# ----------------- Inputs -----------------
-student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
-name = st.text_input("Student Name")
-roll = st.text_input("Roll Number")
-attendance = st.number_input("Attendance Percentage", 0, 100, 90)
-parent_mobile = st.text_input("Parent Mobile Number")
-parent_email = st.text_input("Parent Email")
-photo_file = st.file_uploader("Upload Student Photo", type=["png", "jpg", "jpeg"])
 
 marks = {}
 
@@ -138,7 +107,8 @@ if st.button("Generate Marksheet"):
     data = []
     for sub, mark in marks.items():
         data.append({"Subject": sub, "Marks": mark, "Grade": grade(mark),
-                     "Result": pass_fail(mark), "Suggestion": suggestion(mark)})
+                     "Result": pass_fail(mark), "Suggestion": suggestion(mark),
+                     "Emoji": emoji_feedback(mark)})
     df = pd.DataFrame(data)
     st.table(df)
 
@@ -153,6 +123,7 @@ if st.button("Generate Marksheet"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, college_name, ln=True, align="C")  # College name
     pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
     pdf.ln(5)
 
@@ -174,21 +145,21 @@ if st.button("Generate Marksheet"):
     pdf.ln(5)
 
     # Table Header
-    pdf.set_fill_color(255,255,255)
-    pdf.cell(60, 8, "Subject", 1, 0, 'C', fill=True)
-    pdf.cell(30, 8, "Marks", 1, 0, 'C', fill=True)
-    pdf.cell(30, 8, "Grade", 1, 0, 'C', fill=True)
-    pdf.cell(30, 8, "Result", 1, 0, 'C', fill=True)
-    pdf.cell(40, 8, "Suggestion", 1, 1, 'C', fill=True)
+    pdf.cell(50, 8, "Subject", 1, 0, 'C', fill=True)
+    pdf.cell(25, 8, "Marks", 1, 0, 'C', fill=True)
+    pdf.cell(25, 8, "Grade", 1, 0, 'C', fill=True)
+    pdf.cell(25, 8, "Result", 1, 0, 'C', fill=True)
+    pdf.cell(45, 8, "Suggestion", 1, 0, 'C', fill=True)
+    pdf.cell(15, 8, "Emoji", 1, 1, 'C', fill=True)
 
     # Table Rows
     for sub, mark in marks.items():
-        pdf.set_fill_color(255,255,255)
-        pdf.cell(60, 8, sub, 1, 0, 'C', fill=True)
-        pdf.cell(30, 8, str(mark), 1, 0, 'C', fill=True)
-        pdf.cell(30, 8, grade(mark), 1, 0, 'C', fill=True)
-        pdf.cell(30, 8, pass_fail(mark), 1, 0, 'C', fill=True)
-        pdf.cell(40, 8, suggestion(mark), 1, 1, 'C', fill=True)
+        pdf.cell(50, 8, sub, 1, 0, 'C', fill=True)
+        pdf.cell(25, 8, str(mark), 1, 0, 'C', fill=True)
+        pdf.cell(25, 8, grade(mark), 1, 0, 'C', fill=True)
+        pdf.cell(25, 8, pass_fail(mark), 1, 0, 'C', fill=True)
+        pdf.cell(45, 8, suggestion(mark), 1, 0, 'C', fill=True)
+        pdf.cell(15, 8, emoji_feedback(mark), 1, 1, 'C', fill=True)
 
     if student_type == "School Student":
         pdf.ln(3)
