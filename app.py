@@ -114,19 +114,17 @@ if st.button("Generate Marksheet"):
     # ----------------- PDF Generation -----------------
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_fill_color(230, 248, 255)  # Light blue background for PDF
-    pdf.rect(0, 0, 210, 297, 'F')  # Fill page background
     pdf.set_font("Arial", 'B', 16)
+    pdf.set_text_color(0,0,0)
 
     # College name
     pdf.set_y(10)
-    pdf.set_text_color(0,0,0)
     pdf.cell(0, 10, college_name, ln=True, align="C")
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
     pdf.ln(15)  # Space for photo
 
-    # Student Photo (top-right corner)
+    # Student Photo (top-right)
     if photo_file is not None:
         image = Image.open(photo_file)
         image_path = "temp_photo.png"
@@ -135,7 +133,6 @@ if st.button("Generate Marksheet"):
 
     # Student details
     pdf.set_font("Arial", '', 12)
-    pdf.set_text_color(0,0,0)
     pdf.cell(0, 8, f"Name: {name}", ln=True)
     pdf.cell(0, 8, f"Roll Number: {roll}", ln=True)
     pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True)
@@ -143,38 +140,24 @@ if st.button("Generate Marksheet"):
     pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True)
     pdf.ln(5)
 
-    # Table Header
-    pdf.set_fill_color(180, 180, 180)
+    # Table Header - white cells, black border
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_text_color(0,0,0)
+    pdf.set_draw_color(0,0,0)
+    pdf.set_line_width(0.3)
     pdf.cell(50, 10, "Subject", 1, 0, 'C', fill=True)
     pdf.cell(25, 10, "Marks", 1, 0, 'C', fill=True)
     pdf.cell(25, 10, "Grade", 1, 0, 'C', fill=True)
     pdf.cell(25, 10, "Result", 1, 0, 'C', fill=True)
-    pdf.cell(50, 10, "Suggestion", 1, 0, 'C', fill=True)
-    pdf.cell(20, 10, "Feedback", 1, 1, 'C', fill=True)
+    pdf.cell(65, 10, "Suggestion", 1, 1, 'C', fill=True)
 
-    # Table Rows with mark-based images
-    for i, (sub, mark) in enumerate(marks.items()):
-        # Cell color
-        if mark >= 75:
-            pdf.set_fill_color(144, 238, 144)  # Green
-            img_path = "happy.png"
-        elif mark >= 50:
-            pdf.set_fill_color(255, 255, 153)  # Yellow
-            img_path = "ok.png"
-        else:
-            pdf.set_fill_color(255, 160, 122)  # Red
-            img_path = "sad.png"
-
+    # Table Rows - white background, black text
+    for sub, mark in marks.items():
         pdf.cell(50, 10, sub, 1, 0, 'C', fill=True)
         pdf.cell(25, 10, str(mark), 1, 0, 'C', fill=True)
         pdf.cell(25, 10, grade(mark), 1, 0, 'C', fill=True)
         pdf.cell(25, 10, pass_fail(mark), 1, 0, 'C', fill=True)
-        pdf.cell(50, 10, suggestion(mark), 1, 0, 'C', fill=True)
-        # Insert feedback image
-        if img_path:
-            pdf.image(img_path, x=pdf.get_x()+2, y=pdf.get_y()+2, w=16, h=6)
-        pdf.cell(20, 10, "", 1, 1, 'C', fill=True)
+        pdf.cell(65, 10, suggestion(mark), 1, 1, 'C', fill=True)
 
     if student_type == "School Student":
         pdf.ln(3)
