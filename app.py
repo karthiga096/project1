@@ -9,14 +9,32 @@ st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 # ----------------- Custom CSS -----------------
 st.markdown("""
 <style>
-.stApp {background-color: #f0f8ff; color: black;}  /* Light blue background */
-h1, h2, h3, h4, h5, h6 {color: black; font-weight: bold;}
+/* Background colors */
+.stApp {background-color: #E6F2FF; color: black;}  /* Soft blue background */
+[data-testid="stSidebar"] {background-color: #B3D9FF;} /* Light sidebar blue */
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {color: #003366; font-weight: bold;}
+
+/* Labels and input boxes */
 label, .stMarkdown p, .stTextInput label, .stNumberInput label {color: black !important; font-weight: bold;}
 .stTextInput>div>div>input,
 .stNumberInput>div>div>input,
 .stSelectbox>div>div>select,
-.stFileUploader>div>div>input {color: black !important; background-color: white !important; border: 1px solid #000000 !important;}
-.stButton>button {background-color: #4CAF50; color: white; font-weight: bold; border-radius: 10px; padding: 8px 16px;}
+.stFileUploader>div>div>input {
+    color: black !important; 
+    background-color: white !important; 
+    border: 1px solid #003366 !important; 
+    border-radius: 5px;
+    padding: 5px;
+}
+
+/* Buttons */
+.stButton>button {background-color: #0073e6; color: white; font-weight: bold; border-radius: 10px; padding: 10px 20px;}
+.stButton>button:hover {background-color: #005bb5;}
+
+/* Table styling */
+.css-1d391kg {background-color: #FFFFFF !important;}  /* Dataframe background */
 </style>
 """, unsafe_allow_html=True)
 
@@ -102,7 +120,7 @@ if st.button("Generate Marksheet"):
         data.append({"Subject": sub, "Marks": mark, "Grade": grade(mark),
                      "Result": pass_fail(mark), "Suggestion": suggestion(mark)})
     df = pd.DataFrame(data)
-    st.dataframe(df)  # Clean table in Streamlit
+    st.dataframe(df)
 
     if student_type == "School Student":
         st.markdown(f"**Total Marks:** {total}")
@@ -116,7 +134,7 @@ if st.button("Generate Marksheet"):
     pdf.add_page()
 
     # Page background
-    pdf.set_fill_color(240, 248, 255)
+    pdf.set_fill_color(230, 248, 255)  # Light blue
     pdf.rect(0, 0, 210, 297, 'F')
 
     pdf.set_font("Arial", 'B', 16)
