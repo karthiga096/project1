@@ -125,19 +125,24 @@ if st.button("Generate Marksheet"):
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
 
+    # Reserve space for college name
+    pdf.set_y(10)
     pdf.cell(0, 10, college_name, ln=True, align="C")
+    pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
-    pdf.ln(5)
+    pdf.ln(10)  # Extra space before photo
 
+    # Student Photo
     if photo_file is not None:
         image = Image.open(photo_file)
         image_path = "temp_photo.png"
         image.save(image_path)
-        pdf.image(image_path, x=160, y=10, w=30, h=30)
+        pdf.image(image_path, x=160, y=25, w=30, h=30)  # Properly aligned below header
 
     pdf.set_font("Arial", '', 12)
     pdf.set_text_color(0,0,0)
 
+    # Student details
     pdf.cell(0, 8, f"Name: {name}", ln=True)
     pdf.cell(0, 8, f"Roll Number: {roll}", ln=True)
     pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True)
