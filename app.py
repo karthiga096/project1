@@ -6,11 +6,17 @@ from PIL import Image
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 
-# ----------------- CSS for All Inputs & Tables -----------------
+# ----------------- Custom CSS for Background & Text -----------------
 st.markdown(
     """
     <style>
-    /* Force all text black and boxes white */
+    /* Set custom background color */
+    .stApp {
+        background-color: #F0F8FF; /* Light blue background, change as needed */
+        color: black;
+    }
+
+    /* Force all input text black and background white */
     .stTextInput>div>div>input, 
     .stNumberInput>div>div>input, 
     .stSelectbox>div>div>select, 
@@ -21,13 +27,13 @@ st.markdown(
         font-weight: bold;
     }
 
-    /* Table text black */
+    /* Table text black and background white */
     .stTable td, .stTable th {
         color: black !important;
         background-color: white !important;
     }
 
-    /* Button */
+    /* Button style */
     .stButton>button {
         background-color: #4CAF50;
         color: white;
@@ -36,13 +42,10 @@ st.markdown(
         padding: 8px 16px;
     }
 
-    /* Page background white */
-    .stApp {
-        background-color: #ffffff;
-        color: black;
-    }
+    /* Headings */
     h1, h2, h3, h4, h5, h6 {
         color: black;
+        font-weight: bold;
     }
     </style>
     """,
