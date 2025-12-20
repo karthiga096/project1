@@ -1,6 +1,6 @@
 streamlit
-pandas
-fpdf2
 numpy
+pandas
 scikit-learn
-Pillow
+fpdf
+openpyxl
