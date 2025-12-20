@@ -2,26 +2,25 @@ import streamlit as st
 from fpdf import FPDF
 import pandas as pd
 from PIL import Image
+import base64
 
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 
 # ----------------- Custom CSS -----------------
-st.markdown(
-    """
-    <style>
-    .stApp {background-color: #E6F2FF; color: black;}
-    h1, h2, h3, h4, h5, h6 {color: black; font-weight: bold;}
-    label, .stMarkdown p, .stTextInput label, .stNumberInput label {color: black !important; font-weight: bold;}
-    .stTextInput>div>div>input,
-    .stNumberInput>div>div>input,
-    .stSelectbox>div>div>select,
-    .stFileUploader>div>div>input {color: black !important; background-color: white !important; border: 2px solid #000000 !important; font-weight: bold;}
-    .stTable td, .stTable th {color: black !important; background-color: white !important;}
-    .stButton>button {background-color: #4CAF50; color: white; font-weight: bold; border-radius: 10px; padding: 8px 16px;}
-    </style>
-    """, unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+.stApp {background-color: #E6F2FF; color: black;}
+h1, h2, h3, h4, h5, h6 {color: black; font-weight: bold;}
+label, .stMarkdown p, .stTextInput label, .stNumberInput label {color: black !important; font-weight: bold;}
+.stTextInput>div>div>input,
+.stNumberInput>div>div>input,
+.stSelectbox>div>div>select,
+.stFileUploader>div>div>input {color: black !important; background-color: white !important; border: 2px solid #000000 !important; font-weight: bold;}
+.stTable td, .stTable th {color: black !important; background-color: white !important;}
+.stButton>button {background-color: #4CAF50; color: white; font-weight: bold; border-radius: 10px; padding: 8px 16px;}
+</style>
+""", unsafe_allow_html=True)
 
 st.title("🎓 Student Mark Generation Portal")
 
@@ -105,13 +104,27 @@ elif student_type == "College Student":
 # ----------------- Generate Marksheet -----------------
 if st.button("Generate Marksheet"):
     st.subheader("📝 Marksheet")
+    # Prepare table data
     data = []
+    row_colors = []
     for sub, mark in marks.items():
         data.append({"Subject": sub, "Marks": mark, "Grade": grade(mark),
                      "Result": pass_fail(mark), "Suggestion": suggestion(mark),
                      "Emoji": emoji_feedback(mark)})
+        # Color coding
+        if mark >= 75:
+            row_colors.append("#90EE90")  # Light Green
+        elif mark >= 50:
+            row_colors.append("#FFFF99")  # Light Yellow
+        else:
+            row_colors.append("#FFA07A")  # Light Red
+
     df = pd.DataFrame(data)
-    st.table(df)
+
+    # Display colored table in Streamlit
+    def highlight_rows(row_idx):
+        return ['background-color: {}'.format(row_colors[row_idx])] * len(df.columns)
+    st.dataframe(df.style.apply(lambda x: highlight_rows(x.name), axis=1))
 
     if student_type == "School Student":
         st.markdown(f"**Total Marks:** {total}")
@@ -123,10 +136,7 @@ if st.button("Generate Marksheet"):
     # ----------------- PDF Generation -----------------
     pdf = FPDF()
     pdf.add_page()
-
-    # Unicode font for emojis
-    pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
-    pdf.set_font("DejaVu", 'B', 16)
+    pdf.set_font("Arial", 'B', 16)
 
     pdf.cell(0, 10, college_name, ln=True, align="C")
     pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
@@ -139,7 +149,7 @@ if st.button("Generate Marksheet"):
         image.save(image_path)
         pdf.image(image_path, x=160, y=10, w=30, h=30)
 
-    pdf.set_font("DejaVu", '', 12)
+    pdf.set_font("Arial", '', 12)
     pdf.set_text_color(0,0,0)
 
     pdf.cell(0, 8, f"Name: {name}", ln=True, fill=True)
@@ -158,23 +168,21 @@ if st.button("Generate Marksheet"):
     pdf.cell(45, 8, "Suggestion", 1, 0, 'C', fill=True)
     pdf.cell(15, 8, "Emoji", 1, 1, 'C', fill=True)
 
-    # Table Rows with colored boxes
-    for sub, mark in marks.items():
-        # Set cell color based on marks
+    # Table Rows with color
+    for i, (sub, mark) in enumerate(marks.items()):
         if mark >= 75:
             pdf.set_fill_color(144, 238, 144)  # Light green
         elif mark >= 50:
             pdf.set_fill_color(255, 255, 153)  # Light yellow
         else:
             pdf.set_fill_color(255, 160, 122)  # Light red
-
-        pdf.set_text_color(0,0,0)  # letters always black
+        pdf.set_text_color(0,0,0)
         pdf.cell(50, 8, sub, 1, 0, 'C', fill=True)
         pdf.cell(25, 8, str(mark), 1, 0, 'C', fill=True)
         pdf.cell(25, 8, grade(mark), 1, 0, 'C', fill=True)
         pdf.cell(25, 8, pass_fail(mark), 1, 0, 'C', fill=True)
         pdf.cell(45, 8, suggestion(mark), 1, 0, 'C', fill=True)
-        pdf.cell(15, 8, emoji_feedback(mark), 1, 1, 'C', fill=True)
+        pdf.cell(15, 8, "", 1, 1, 'C', fill=True)  # Emoji omitted in PDF
 
     if student_type == "School Student":
         pdf.ln(3)
