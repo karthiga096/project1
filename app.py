@@ -6,20 +6,32 @@ from PIL import Image
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 
-# ----------------- Custom CSS for Background & Text -----------------
+# ----------------- Custom CSS for visibility -----------------
 st.markdown(
     """
     <style>
-    /* Set custom background color */
+    /* App background */
     .stApp {
-        background-color: #F0F8FF; /* Light blue background, change as needed */
+        background-color: #E6F2FF;  /* light blue background, change as needed */
         color: black;
     }
 
-    /* Force all input text black and background white */
-    .stTextInput>div>div>input, 
-    .stNumberInput>div>div>input, 
-    .stSelectbox>div>div>select, 
+    /* Headings */
+    h1, h2, h3, h4, h5, h6 {
+        color: black;
+        font-weight: bold;
+    }
+
+    /* Input labels */
+    label, .stMarkdown p, .stTextInput label, .stNumberInput label {
+        color: black !important;
+        font-weight: bold;
+    }
+
+    /* Input boxes */
+    .stTextInput>div>div>input,
+    .stNumberInput>div>div>input,
+    .stSelectbox>div>div>select,
     .stFileUploader>div>div>input {
         color: black !important;
         background-color: white !important;
@@ -27,25 +39,19 @@ st.markdown(
         font-weight: bold;
     }
 
-    /* Table text black and background white */
+    /* Tables */
     .stTable td, .stTable th {
         color: black !important;
         background-color: white !important;
     }
 
-    /* Button style */
+    /* Buttons */
     .stButton>button {
         background-color: #4CAF50;
         color: white;
         font-weight: bold;
         border-radius: 10px;
         padding: 8px 16px;
-    }
-
-    /* Headings */
-    h1, h2, h3, h4, h5, h6 {
-        color: black;
-        font-weight: bold;
     }
     </style>
     """,
