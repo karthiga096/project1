@@ -1,224 +1,193 @@
 import streamlit as st
-import numpy as np
-import pandas as pd
-import os
-from sklearn.linear_model import LinearRegression
 from fpdf import FPDF
-import tempfile
+import pandas as pd
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="Smart Marksheet System",
-    page_icon="🎓",
-    layout="centered"
-)
+# ----------------- Helper Functions -----------------
 
-# ---------------- ACCESSIBLE GREEN THEME (BLACK TEXT) ----------------
-st.markdown("""
-<style>
-.stApp {
-    background: linear-gradient(135deg, #f0fff4, #c6f6d5);
-}
-
-/* Force all text black */
-html, body, [class*="css"] {
-    color: black !important;
-}
-
-h1, h2, h3 {
-    color: black !important;
-    text-align: center;
-    font-weight: 700;
-}
-
-label {
-    color: black !important;
-    font-weight: 600;
-}
-
-.card {
-    background-color: white;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
-    margin-bottom: 20px;
-}
-
-.stButton > button,
-.stDownloadButton > button {
-    background-color: #16a34a !important;
-    color: white !important;
-    font-size: 18px;
-    border-radius: 12px;
-    padding: 10px;
-    width: 100%;
-}
-
-input, textarea, select {
-    color: black !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ---------------- HEADER IMAGE ----------------
-st.image(
-    "https://cdn-icons-png.flaticon.com/512/3135/3135755.png",
-    width=120
-)
-
-st.title("🎓 Smart School Marksheet System")
-st.markdown("---")
-
-# ---------------- GRADE FUNCTION ----------------
 def grade(mark):
+    """Return grade based on marks"""
     if mark >= 90:
-        return "A+", "Pass"
+        return "A+"
     elif mark >= 80:
-        return "A", "Pass"
+        return "A"
     elif mark >= 70:
-        return "B+", "Pass"
+        return "B+"
     elif mark >= 60:
-        return "B", "Pass"
+        return "B"
     elif mark >= 50:
-        return "C", "Pass"
+        return "C"
+    elif mark >= 35:
+        return "D"
     else:
-        return "D", "Fail"
+        return "F"
 
-# ---------------- ML SUGGESTION (NO EMOJIS) ----------------
-def lr_suggestion(marks):
-    X = np.arange(len(marks)).reshape(-1, 1)
-    model = LinearRegression()
-    model.fit(X, marks)
-    return "Overall performance is improving" if model.coef_[0] > 0 else "Needs more practice"
+def pass_fail(mark):
+    """Return Pass/Fail based on marks"""
+    return "Pass" if mark >= 35 else "Fail"
 
-# ---------------- SAVE TO EXCEL ----------------
-def save_to_excel(data, file="student_records.xlsx"):
-    df = pd.DataFrame([data])
-    if os.path.exists(file):
-        old = pd.read_excel(file)
-        df = pd.concat([old, df], ignore_index=True)
-    df.to_excel(file, index=False)
+def suggestion(mark):
+    """Return suggestion based on marks"""
+    if mark >= 75:
+        return "Excellent performance"
+    elif mark >= 60:
+        return "Good, keep improving"
+    elif mark >= 50:
+        return "Average, work harder"
+    elif mark >= 35:
+        return "Needs improvement"
+    else:
+        return "Failed, must retake"
 
-# ---------------- PDF GENERATION ----------------
-def generate_pdf(name, roll, subjects, marks, summary):
+def color_code(mark):
+    """Return color for PDF table cell"""
+    if mark >= 60:
+        return (144, 238, 144)  # Green
+    elif mark >= 35:
+        return (255, 255, 102)  # Yellow
+    else:
+        return (255, 102, 102)  # Red
+
+# ----------------- School Subjects -----------------
+school_groups = {
+    "Biology": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Biology"],
+    "Computer Science": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Computer Science"],
+    "Commerce": ["Tamil", "English", "Accountancy", "Economics", "Commerce", "Maths"],
+    "History / Arts": ["Tamil", "English", "History", "Civics", "Geography", "Economics"]
+}
+
+# ----------------- College Subjects Example -----------------
+college_departments = {
+    "CSE": {
+        "Semester 1": ["Maths", "Physics", "Programming", "Electronics", "English", "Lab"],
+        "Semester 2": ["Maths 2", "Data Structures", "Physics 2", "DBMS", "English", "Lab"]
+        # Add more semesters
+    },
+    "ECE": {
+        "Semester 1": ["Maths", "Physics", "Circuits", "Electronics", "English", "Lab"],
+        "Semester 2": ["Maths 2", "Signals", "Electronics 2", "Communication", "English", "Lab"]
+    },
+    "Biotechnology": {
+        "Semester 1": ["Biology", "Chemistry", "Maths", "Physics", "English", "Lab"],
+        "Semester 2": ["Genetics", "Microbiology", "Chemistry 2", "Maths 2", "English", "Lab"]
+    }
+}
+
+# ----------------- Streamlit App -----------------
+st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
+st.title("🎓 Student Mark Generation Portal")
+
+# Common Inputs
+student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
+name = st.text_input("Student Name")
+roll = st.text_input("Roll Number")
+attendance = st.number_input("Attendance Percentage", 0, 100, 90)
+parent_mobile = st.text_input("Parent Mobile Number")
+parent_email = st.text_input("Parent Email")
+
+marks = {}
+
+if student_type == "School Student":
+    group = st.selectbox("Select Group", list(school_groups.keys()))
+    subjects = school_groups[group]
+
+    st.subheader("Enter Subject Marks")
+    for sub in subjects:
+        marks[sub] = st.number_input(f"{sub} Marks", 0, 100, 0)
+
+    total = sum(marks.values())
+    average = total / len(subjects)
+
+    # School Cutoffs
+    maths = marks.get("Maths",0)
+    physics = marks.get("Physics",0)
+    chemistry = marks.get("Chemistry",0)
+    biology = marks.get("Biology",0)
+
+    engineering_cutoff = maths + (physics + chemistry)/2
+    medical_cutoff = biology + (physics + chemistry)/2 if "Biology" in subjects else "N/A"
+
+elif student_type == "College Student":
+    dept = st.selectbox("Select Department", list(college_departments.keys()))
+    sem = st.selectbox("Select Semester", list(college_departments[dept].keys()))
+    subjects = college_departments[dept][sem]
+
+    st.subheader("Enter Subject Marks")
+    for sub in subjects:
+        marks[sub] = st.number_input(f"{sub} Marks", 0, 100, 0)
+
+# ----------------- Display Marksheet -----------------
+if st.button("Generate Marksheet"):
+
+    st.subheader("📝 Marksheet")
+    data = []
+    for sub, mark in marks.items():
+        data.append({
+            "Subject": sub,
+            "Marks": mark,
+            "Grade": grade(mark),
+            "Result": pass_fail(mark),
+            "Suggestion": suggestion(mark)
+        })
+
+    df = pd.DataFrame(data)
+    st.table(df)
+
+    if student_type == "School Student":
+        st.markdown(f"**Total Marks:** {total}")
+        st.markdown(f"**Average Marks:** {average:.2f}")
+        st.markdown(f"**Engineering Cutoff:** {engineering_cutoff}")
+        if medical_cutoff != "N/A":
+            st.markdown(f"**Medical Cutoff:** {medical_cutoff}")
+
+    # ----------------- PDF Generation -----------------
     pdf = FPDF()
     pdf.add_page()
 
-    pdf.set_font("Arial", "B", 18)
-    pdf.cell(0, 12, "SCHOOL MARKSHEET", ln=True, align="C")
-    pdf.ln(6)
+    # Logo
+    # pdf.image("school_logo.png", 10, 8, 33)  # Add logo if available
 
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 8, f"Student Name : {name}", ln=True)
-    pdf.cell(0, 8, f"Roll Number  : {roll}", ln=True)
-    pdf.ln(6)
-
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(55, 10, "Subject", 1)
-    pdf.cell(30, 10, "Marks", 1)
-    pdf.cell(30, 10, "Grade", 1)
-    pdf.cell(35, 10, "Result", 1)
-    pdf.ln()
-
-    pdf.set_font("Arial", "", 11)
-    overall_pass = True
-
-    for s, m in zip(subjects, marks):
-        g, r = grade(m)
-        if r == "Fail":
-            overall_pass = False
-
-        if r == "Pass":
-            pdf.set_fill_color(200, 255, 200)
-        else:
-            pdf.set_fill_color(255, 200, 200)
-
-        pdf.cell(55, 10, s, 1, fill=True)
-        pdf.cell(30, 10, str(m), 1, fill=True)
-        pdf.cell(30, 10, g, 1, fill=True)
-        pdf.cell(35, 10, r, 1, fill=True)
-        pdf.ln()
-
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
     pdf.ln(5)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, f"Overall Result : {'PASS' if overall_pass else 'FAIL'}", ln=True)
 
-    pdf.set_font("Arial", "", 11)
-    for k, v in summary.items():
-        pdf.cell(0, 8, f"{k} : {v}", ln=True)
+    # Student Details
+    pdf.set_font("Arial", '', 12)
+    pdf.cell(0, 8, f"Name: {name}", ln=True)
+    pdf.cell(0, 8, f"Roll Number: {roll}", ln=True)
+    pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True)
+    pdf.cell(0, 8, f"Parent Email: {parent_email}", ln=True)
+    pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True)
+    pdf.ln(5)
 
-    pdf.cell(0, 8, f"Suggestion : {lr_suggestion(marks)}", ln=True)
+    # Table Header
+    pdf.set_fill_color(200,200,200)
+    pdf.cell(60, 8, "Subject", 1, 0, 'C', fill=True)
+    pdf.cell(30, 8, "Marks", 1, 0, 'C', fill=True)
+    pdf.cell(30, 8, "Grade", 1, 0, 'C', fill=True)
+    pdf.cell(30, 8, "Result", 1, 0, 'C', fill=True)
+    pdf.cell(40, 8, "Suggestion", 1, 1, 'C', fill=True)
 
-    temp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    pdf.output(temp.name)
-    return temp.name
+    # Table Rows
+    for sub, mark in marks.items():
+        r,g,b = color_code(mark)
+        pdf.set_fill_color(r,g,b)
+        pdf.cell(60, 8, sub, 1, 0, 'C')
+        pdf.cell(30, 8, str(mark), 1, 0, 'C', fill=True)
+        pdf.cell(30, 8, grade(mark), 1, 0, 'C', fill=True)
+        pdf.cell(30, 8, pass_fail(mark), 1, 0, 'C', fill=True)
+        pdf.cell(40, 8, suggestion(mark), 1, 1, 'C', fill=True)
 
-# ---------------- INPUT FORM ----------------
-with st.container():
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    # School Cutoffs if applicable
+    if student_type == "School Student":
+        pdf.ln(3)
+        pdf.cell(0,8,f"Engineering Cutoff: {engineering_cutoff}", ln=True)
+        if medical_cutoff != "N/A":
+            pdf.cell(0,8,f"Medical Cutoff: {medical_cutoff}", ln=True)
 
-    name = st.text_input("Student Name")
-    roll = st.text_input("Roll Number")
-    parent_mobile = st.text_input("Parent Mobile Number")
-    parent_email = st.text_input("Parent Email")
+    # Save PDF
+    pdf_output = f"{name}_marksheet.pdf"
+    pdf.output(pdf_output)
 
-    group = st.selectbox(
-        "Select Group",
-        ["Biology", "Computer Science", "History", "Commerce"]
-    )
-
-    if group == "Biology":
-        subjects = ["Tamil", "English", "Maths", "Physics", "Chemistry", "Biology"]
-    elif group == "Computer Science":
-        subjects = ["Tamil", "English", "Maths", "Physics", "Chemistry", "Computer Science"]
-    elif group == "History":
-        subjects = ["Tamil", "English", "History", "Civics", "Economics", "Geography"]
-    else:
-        subjects = ["Tamil", "English", "Accountancy", "Business Maths", "Economics", "Commerce"]
-
-    st.subheader("Enter Subject Marks")
-    marks = [st.number_input(sub, 0, 100) for sub in subjects]
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ---------------- GENERATE BUTTON ----------------
-if st.button("Generate Marksheet"):
-    if not all([name, roll, parent_mobile, parent_email]):
-        st.error("Please fill all details")
-    else:
-        total = sum(marks)
-        average = round(total / len(marks), 2)
-
-        summary = {
-            "Total Marks": total,
-            "Average": average
-        }
-
-        if group == "Biology":
-            summary["Engineering Cutoff"] = marks[2] + (marks[3] + marks[4]) / 2
-            summary["Medical Cutoff"] = marks[5] + (marks[3] + marks[4]) / 2
-
-        elif group == "Computer Science":
-            summary["Engineering Cutoff"] = marks[2] + (marks[3] + marks[4]) / 2
-
-        save_to_excel({
-            "Name": name,
-            "Roll": roll,
-            "Group": group,
-            "Total": total,
-            "Average": average,
-            "Parent Mobile": parent_mobile,
-            "Parent Email": parent_email
-        })
-
-        pdf_path = generate_pdf(name, roll, subjects, marks, summary)
-
-        st.success("Marksheet generated successfully")
-
-        with open(pdf_path, "rb") as f:
-            st.download_button(
-                "Download Marksheet PDF",
-                f,
-                file_name=f"{roll}_Marksheet.pdf",
-                mime="application/pdf"
-            )
+    # Download Button
+    with open(pdf_output, "rb") as f:
+        st.download_button("📥 Download Marksheet PDF", f, file_name=pdf_output, mime="application/pdf")
