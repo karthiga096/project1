@@ -9,46 +9,47 @@ st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 # ----------------- Custom CSS -----------------
 st.markdown("""
 <style>
-/* Background colors */
-.stApp {background-color: #E6F2FF; color: black;}  /* Soft blue background */
-[data-testid="stSidebar"] {background-color: #B3D9FF;} /* Light sidebar blue */
+/* Page & Sidebar */
+.stApp {background-color: #FFF8DC; color: black;}  /* Soft cream background */
+[data-testid="stSidebar"] {background-color: #FFDAB9;} /* Light peach sidebar */
 
 /* Headings */
-h1, h2, h3, h4, h5, h6 {color: #003366; font-weight: bold;}
+h1, h2, h3, h4, h5, h6 {color: #8B4513; font-weight: bold; font-size: 28px;}
 
-/* Labels and input boxes */
-label, .stMarkdown p, .stTextInput label, .stNumberInput label {color: black !important; font-weight: bold;}
+/* Labels & Inputs */
+label, .stMarkdown p, .stTextInput label, .stNumberInput label {color: #8B4513 !important; font-weight: bold; font-size: 18px;}
 .stTextInput>div>div>input,
 .stNumberInput>div>div>input,
 .stSelectbox>div>div>select,
 .stFileUploader>div>div>input {
     color: black !important; 
-    background-color: white !important; 
-    border: 1px solid #003366 !important; 
-    border-radius: 5px;
-    padding: 5px;
+    background-color: #FFF !important; 
+    border: 2px solid #8B4513 !important; 
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 18px;
 }
 
 /* Buttons */
-.stButton>button {background-color: #0073e6; color: white; font-weight: bold; border-radius: 10px; padding: 10px 20px;}
-.stButton>button:hover {background-color: #005bb5;}
+.stButton>button {background-color: #FF8C00; color: white; font-weight: bold; border-radius: 10px; padding: 12px 25px; font-size: 20px;}
+.stButton>button:hover {background-color: #FF7F50;}
 
-/* Table styling */
-.css-1d391kg {background-color: #FFFFFF !important;}  /* Dataframe background */
+/* Table background */
+.css-1d391kg {background-color: #FFF !important; font-size: 18px;} 
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🎓 Student Mark Generation Portal")
+st.title("🎓 Student Marksheet Portal")
 
-# ----------------- Inputs -----------------
-college_name = st.text_input("Enter College/School Name", "KAMARAJ COLLEGE OF ENGINEERING AND TECHNOLOGY")
-student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
-name = st.text_input("Student Name")
-roll = st.text_input("Roll Number")
-attendance = st.number_input("Attendance Percentage", 0, 100, 90)
-parent_mobile = st.text_input("Parent Mobile Number")
-parent_email = st.text_input("Parent Email")
-photo_file = st.file_uploader("Upload Student Photo", type=["png", "jpg", "jpeg"])
+st.markdown("### Step 1: Enter Student Details")
+college_name = st.text_input("🏫 College/School Name", "KAMARAJ COLLEGE OF ENGINEERING AND TECHNOLOGY")
+student_type = st.selectbox("👤 Select Student Type", ["School Student", "College Student"])
+name = st.text_input("📝 Student Name")
+roll = st.text_input("🆔 Roll Number")
+attendance = st.number_input("📊 Attendance Percentage", 0, 100, 90)
+parent_mobile = st.text_input("📱 Parent Mobile Number")
+parent_email = st.text_input("✉ Parent Email")
+photo_file = st.file_uploader("📷 Upload Student Photo", type=["png", "jpg", "jpeg"])
 
 # ----------------- Helper Functions -----------------
 def grade(mark):
@@ -64,9 +65,9 @@ def pass_fail(mark):
     return "Pass" if mark >= 35 else "Fail"
 
 def suggestion(mark):
-    if mark >= 75: return "Excellent performance"
-    elif mark >= 50: return "Average, work harder"
-    else: return "Failed, must retake"
+    if mark >= 75: return "Excellent ✅"
+    elif mark >= 50: return "Average ⚠️"
+    else: return "Poor ❌"
 
 # ----------------- Subjects -----------------
 school_groups = {
@@ -77,21 +78,18 @@ school_groups = {
 }
 
 college_departments = {
-    "CSE": {"Semester 1": ["Maths", "Physics", "Programming", "Electronics", "English", "Lab"],
-            "Semester 2": ["Maths 2", "Data Structures", "Physics 2", "DBMS", "English", "Lab"]},
-    "ECE": {"Semester 1": ["Maths", "Physics", "Circuits", "Electronics", "English", "Lab"],
-            "Semester 2": ["Maths 2", "Signals", "Electronics 2", "Communication", "English", "Lab"]},
-    "Biotechnology": {"Semester 1": ["Biology", "Chemistry", "Maths", "Physics", "English", "Lab"],
-                      "Semester 2": ["Genetics", "Microbiology", "Chemistry 2", "Maths 2", "English", "Lab"]}
+    "CSE": {"Semester 1": ["Maths", "Physics", "Programming", "Electronics", "English", "Lab"]},
+    "ECE": {"Semester 1": ["Maths", "Physics", "Circuits", "Electronics", "English", "Lab"]},
+    "Biotechnology": {"Semester 1": ["Biology", "Chemistry", "Maths", "Physics", "English", "Lab"]}
 }
 
 marks = {}
 
-# ----------------- Inputs for Subjects -----------------
+# ----------------- Input for Subjects -----------------
+st.markdown("### Step 2: Enter Subject Marks")
 if student_type == "School Student":
-    group = st.selectbox("Select Group", list(school_groups.keys()))
+    group = st.selectbox("📂 Select Group", list(school_groups.keys()))
     subjects = school_groups[group]
-    st.subheader("Enter Subject Marks")
     for sub in subjects:
         marks[sub] = st.number_input(f"{sub} Marks", 0, 100, 0)
 
@@ -105,16 +103,15 @@ if student_type == "School Student":
     medical_cutoff = biology + (physics + chemistry)/2 if "Biology" in subjects else "N/A"
 
 elif student_type == "College Student":
-    dept = st.selectbox("Select Department", list(college_departments.keys()))
-    sem = st.selectbox("Select Semester", list(college_departments[dept].keys()))
+    dept = st.selectbox("📂 Select Department", list(college_departments.keys()))
+    sem = st.selectbox("📘 Select Semester", list(college_departments[dept].keys()))
     subjects = college_departments[dept][sem]
-    st.subheader("Enter Subject Marks")
     for sub in subjects:
         marks[sub] = st.number_input(f"{sub} Marks", 0, 100, 0)
 
 # ----------------- Generate Marksheet -----------------
-if st.button("Generate Marksheet"):
-    st.subheader("📝 Marksheet")
+if st.button("✅ Generate Marksheet"):
+    st.subheader("📝 Marksheet Preview")
     data = []
     for sub, mark in marks.items():
         data.append({"Subject": sub, "Marks": mark, "Grade": grade(mark),
@@ -132,19 +129,15 @@ if st.button("Generate Marksheet"):
     # ----------------- PDF Generation -----------------
     pdf = FPDF()
     pdf.add_page()
-
-    # Page background
-    pdf.set_fill_color(230, 248, 255)  # Light blue
+    pdf.set_fill_color(255, 250, 240)  # Cream background
     pdf.rect(0, 0, 210, 297, 'F')
+    pdf.set_font("Arial", 'B', 18)
+    pdf.set_text_color(75, 0, 130)  # Indigo
 
-    pdf.set_font("Arial", 'B', 16)
-    pdf.set_text_color(0,0,0)
-
-    # College Name
     pdf.set_y(10)
-    pdf.cell(0, 10, college_name, ln=True, align="C")
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
+    pdf.cell(0, 12, college_name, ln=True, align="C")
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 12, "Student Marksheet", ln=True, align="C")
     pdf.ln(15)
 
     # Student Photo
@@ -155,32 +148,30 @@ if st.button("Generate Marksheet"):
         pdf.image(image_path, x=160, y=25, w=35, h=35)
 
     # Student details
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 8, f"Name: {name}", ln=True)
-    pdf.cell(0, 8, f"Roll Number: {roll}", ln=True)
-    pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True)
-    pdf.cell(0, 8, f"Parent Email: {parent_email}", ln=True)
-    pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True)
+    pdf.set_font("Arial", '', 14)
+    pdf.set_text_color(0,0,0)
+    pdf.cell(0, 10, f"Name: {name}", ln=True)
+    pdf.cell(0, 10, f"Roll Number: {roll}", ln=True)
+    pdf.cell(0, 10, f"Attendance: {attendance}%", ln=True)
+    pdf.cell(0, 10, f"Parent Email: {parent_email}", ln=True)
+    pdf.cell(0, 10, f"Parent Mobile: {parent_mobile}", ln=True)
     pdf.ln(5)
 
     # Table Header
-    pdf.set_fill_color(0, 102, 204)  # Blue header
+    pdf.set_fill_color(75, 0, 130)  # Indigo header
     pdf.set_text_color(255,255,255)
     pdf.set_draw_color(0,0,0)
     pdf.set_line_width(0.3)
-    pdf.cell(50, 10, "Subject", 1, 0, 'C', fill=True)
-    pdf.cell(25, 10, "Marks", 1, 0, 'C', fill=True)
-    pdf.cell(25, 10, "Grade", 1, 0, 'C', fill=True)
-    pdf.cell(25, 10, "Result", 1, 0, 'C', fill=True)
-    pdf.cell(65, 10, "Suggestion", 1, 1, 'C', fill=True)
+    pdf.cell(50, 12, "Subject", 1, 0, 'C', fill=True)
+    pdf.cell(25, 12, "Marks", 1, 0, 'C', fill=True)
+    pdf.cell(25, 12, "Grade", 1, 0, 'C', fill=True)
+    pdf.cell(25, 12, "Result", 1, 0, 'C', fill=True)
+    pdf.cell(65, 12, "Suggestion", 1, 1, 'C', fill=True)
 
-    # Table Rows - alternating colors
+    # Table Rows
     fill = False
     for sub, mark in marks.items():
-        if fill:
-            pdf.set_fill_color(220, 230, 241)  # Light grayish-blue
-        else:
-            pdf.set_fill_color(255, 255, 255)
+        pdf.set_fill_color(255, 255, 255) if not fill else pdf.set_fill_color(245, 245, 245)
         fill = not fill
         pdf.set_text_color(0,0,0)
         pdf.cell(50, 10, sub, 1, 0, 'C', fill=True)
@@ -191,14 +182,12 @@ if st.button("Generate Marksheet"):
 
     if student_type == "School Student":
         pdf.ln(3)
-        pdf.cell(0,8,f"Engineering Cutoff: {engineering_cutoff}", ln=True)
+        pdf.cell(0,10,f"Engineering Cutoff: {engineering_cutoff}", ln=True)
         if medical_cutoff != "N/A":
-            pdf.cell(0,8,f"Medical Cutoff: {medical_cutoff}", ln=True)
+            pdf.cell(0,10,f"Medical Cutoff: {medical_cutoff}", ln=True)
 
-    # Save PDF
     pdf_output = f"{name}_marksheet.pdf"
     pdf.output(pdf_output)
 
-    # Download
     with open(pdf_output, "rb") as f:
         st.download_button("📥 Download Marksheet PDF", f, file_name=pdf_output, mime="application/pdf")
