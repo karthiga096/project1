@@ -6,22 +6,28 @@ from PIL import Image
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 
-# ----------------- Custom CSS for High-Contrast White Boxes -----------------
+# ----------------- CSS for All Inputs & Tables -----------------
 st.markdown(
     """
     <style>
-    .stApp {
-        background-color: #ffffff;
-        color: black;
-    }
-    h1, h2, h3, h4, h5, h6, .stHeader {
-        color: black;
+    /* Force all text black and boxes white */
+    .stTextInput>div>div>input, 
+    .stNumberInput>div>div>input, 
+    .stSelectbox>div>div>select, 
+    .stFileUploader>div>div>input {
+        color: black !important;
+        background-color: white !important;
+        border: 2px solid #000000 !important;
         font-weight: bold;
     }
+
+    /* Table text black */
     .stTable td, .stTable th {
-        color: black;
-        background-color: #ffffff !important;
+        color: black !important;
+        background-color: white !important;
     }
+
+    /* Button */
     .stButton>button {
         background-color: #4CAF50;
         color: white;
@@ -29,12 +35,14 @@ st.markdown(
         border-radius: 10px;
         padding: 8px 16px;
     }
-    .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select {
-        border: 2px solid #000000;
-        border-radius: 5px;
+
+    /* Page background white */
+    .stApp {
         background-color: #ffffff;
         color: black;
-        font-weight: bold;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: black;
     }
     </style>
     """,
