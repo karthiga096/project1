@@ -13,13 +13,10 @@ st.set_page_config(
 # ----------------- CUSTOM CSS -----------------
 st.markdown("""
 <style>
-/* Background Gradient */
 .stApp {
     background: linear-gradient(to right, #667eea, #764ba2);
     font-family: 'Segoe UI', sans-serif;
 }
-
-/* Title */
 .main-title {
     text-align: center;
     color: white;
@@ -27,16 +24,12 @@ st.markdown("""
     font-weight: bold;
     margin-bottom: 10px;
 }
-
-/* Subtitle */
 .sub-title {
     text-align: center;
     color: #f1f1f1;
     font-size: 18px;
     margin-bottom: 30px;
 }
-
-/* Card */
 .card {
     background-color: white;
     padding: 25px;
@@ -44,19 +37,6 @@ st.markdown("""
     box-shadow: 0px 10px 30px rgba(0,0,0,0.25);
     margin-bottom: 25px;
 }
-
-/* Result Box */
-.result {
-    background: linear-gradient(to right, #43cea2, #185a9d);
-    padding: 20px;
-    border-radius: 15px;
-    color: white;
-    font-size: 18px;
-    text-align: center;
-    margin-top: 20px;
-}
-
-/* Button */
 .stButton>button {
     background: linear-gradient(to right, #ff512f, #dd2476);
     color: white;
@@ -70,7 +50,7 @@ st.markdown("""
 
 # ----------------- PAGE HEADER -----------------
 st.markdown("<div class='main-title'>🎓 Student Mark Generation Portal</div>", unsafe_allow_html=True)
-st.markdown("<div class='sub-title'>Smart | Colourful | Easy to Use</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub-title'>Smart | Tabular | Professional Marksheet</div>", unsafe_allow_html=True)
 
 # ----------------- STUDENT DETAILS -----------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
@@ -82,105 +62,96 @@ attendance = st.number_input("📊 Attendance Percentage", 0, 100)
 photo = st.file_uploader("🖼 Upload Student Photo", type=["png", "jpg", "jpeg"])
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Display photo preview
 if photo:
     st.image(photo, width=180, caption="Student Photo")
 
-# ----------------- SUBJECT MARKS -----------------
+# ----------------- SUBJECT MARKS INPUT -----------------
 st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.subheader("📚 Subject Marks")
-m1 = st.slider("Mathematics", 0, 100)
-m2 = st.slider("Science", 0, 100)
-m3 = st.slider("English", 0, 100)
-m4 = st.slider("Computer Science", 0, 100)
-m5 = st.slider("Social Science", 0, 100)
+st.subheader("📚 Enter Subject Marks (0-100)")
+subjects = ["Mathematics", "Science", "English", "Computer Science", "Social Science"]
+marks = {}
+for subj in subjects:
+    marks[subj] = st.number_input(f"{subj}", 0, 100, step=1)
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ----------------- RESULT CALCULATION -----------------
-if st.button("✨ Generate Result"):
-    total = m1 + m2 + m3 + m4 + m5
-    avg = total / 5
-
-    if avg >= 90:
-        grade = "A+"
-    elif avg >= 75:
-        grade = "A"
-    elif avg >= 60:
-        grade = "B"
-    elif avg >= 50:
-        grade = "C"
+# ----------------- RESULT & PDF -----------------
+def grade_calc(mark):
+    if mark >= 90:
+        return "A+", (0, 128, 0)   # Green
+    elif mark >= 75:
+        return "A", (34, 139, 34)  # Dark Green
+    elif mark >= 60:
+        return "B", (255, 215, 0)  # Gold
+    elif mark >= 50:
+        return "C", (255, 165, 0)  # Orange
     else:
-        grade = "Fail"
+        return "Fail", (255, 0, 0) # Red
 
-    # Display result
-    st.markdown(f"""
-<div class='result'>
-🎯 <b>Total Marks:</b> {total} / 500 <br>
-📈 <b>Average:</b> {avg:.2f}% <br>
-🏆 <b>Grade:</b> {grade} <br>
-📊 <b>Attendance:</b> {attendance}%
-</div>
-""", unsafe_allow_html=True)
+if st.button("✨ Generate Result & PDF"):
 
-    # ----------------- PDF GENERATION -----------------
+    total = sum(marks.values())
+    avg = total / len(subjects)
+
     pdf = FPDF()
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    # School name header
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, f"{college}", ln=True, align="C")
-    pdf.cell(0, 10, f"Student Marksheet", ln=True, align="C")
+    pdf.cell(0, 10, college, ln=True, align="C")
+    pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
     pdf.ln(10)
-    
+
+    # Student details
     pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 10, f"Name: {name}", ln=True)
-    pdf.cell(0, 10, f"Roll No: {roll}", ln=True)
-    pdf.cell(0, 10, f"Student Type: {student_type}", ln=True)
-    pdf.cell(0, 10, f"Attendance: {attendance}%", ln=True)
+    pdf.cell(50, 10, f"Name: {name}", border=1)
+    pdf.cell(50, 10, f"Roll No: {roll}", border=1)
+    pdf.cell(50, 10, f"Type: {student_type}", border=1)
+    pdf.cell(0, 10, f"Attendance: {attendance}%", border=1, ln=True)
+
+    # Add photo
+    if photo:
+        image = Image.open(photo)
+        tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+        image.save(tmp_file.name)
+        pdf.image(tmp_file.name, x=150, y=30, w=40)  # Position top-right
+
+    pdf.ln(15)
+
+    # Table header
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(80, 10, "Subject", border=1, align="C")
+    pdf.cell(30, 10, "Marks", border=1, align="C")
+    pdf.cell(30, 10, "Grade", border=1, align="C")
+    pdf.ln()
+
+    # Table rows with colored grades
+    pdf.set_font("Arial", "", 12)
+    for subj, mark in marks.items():
+        g, color = grade_calc(mark)
+        pdf.set_fill_color(*color)
+        pdf.cell(80, 10, subj, border=1)
+        pdf.cell(30, 10, str(mark), border=1)
+        pdf.cell(30, 10, g, border=1, ln=True, fill=True)
+
+    # Total & Average
+    total_grade, _ = grade_calc(avg)
     pdf.ln(5)
-    
-    pdf.cell(0, 10, f"Mathematics: {m1}", ln=True)
-    pdf.cell(0, 10, f"Science: {m2}", ln=True)
-    pdf.cell(0, 10, f"English: {m3}", ln=True)
-    pdf.cell(0, 10, f"Computer Science: {m4}", ln=True)
-    pdf.cell(0, 10, f"Social Science: {m5}", ln=True)
-    pdf.ln(5)
-    
-    pdf.cell(0, 10, f"Total Marks: {total}/500", ln=True)
-    pdf.cell(0, 10, f"Average: {avg:.2f}%", ln=True)
-    pdf.cell(0, 10, f"Grade: {grade}", ln=True)
+    pdf.cell(80, 10, "Total", border=1)
+    pdf.cell(30, 10, str(total), border=1)
+    pdf.cell(30, 10, "", border=1, ln=True)
+
+    pdf.cell(80, 10, "Average", border=1)
+    pdf.cell(30, 10, f"{avg:.2f}", border=1)
+    pdf.cell(30, 10, total_grade, border=1, ln=True)
 
     # Save PDF temporarily
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-        pdf.output(tmp_file.name)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
+        pdf.output(tmp_pdf.name)
         st.success("✅ PDF Generated Successfully!")
         st.download_button(
-            label="📥 Download Marksheet PDF",
-            data=open(tmp_file.name, "rb").read(),
+            label="📥 Download Tabular Marksheet PDF",
+            data=open(tmp_pdf.name, "rb").read(),
             file_name=f"{name}_marksheet.pdf",
             mime="application/pdf"
         )
-
-# ----------------- OPTIONAL: Email PDF -----------------
-# You can uncomment and configure this section to send the PDF via email
-"""
-import smtplib
-from email.message import EmailMessage
-
-sender_email = "your_email@example.com"
-sender_password = "your_password"
-receiver_email = "parent_email@example.com"
-
-msg = EmailMessage()
-msg["Subject"] = "Student Marksheet"
-msg["From"] = sender_email
-msg["To"] = receiver_email
-msg.set_content("Please find the marksheet attached.")
-
-with open(tmp_file.name, "rb") as f:
-    file_data = f.read()
-    msg.add_attachment(file_data, maintype="application", subtype="pdf", filename=f"{name}_marksheet.pdf")
-
-with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
-    server.login(sender_email, sender_password)
-    server.send_message(msg)
-    st.success("📧 Email sent successfully!")
-"""
