@@ -20,25 +20,22 @@ st.markdown("""
     background: linear-gradient(135deg, #f0fff4, #c6f6d5);
 }
 
-/* Force ALL text to black */
+/* Force all text black */
 html, body, [class*="css"] {
     color: black !important;
 }
 
-/* Headings */
 h1, h2, h3 {
     color: black !important;
     text-align: center;
     font-weight: 700;
 }
 
-/* Labels */
 label {
     color: black !important;
     font-weight: 600;
 }
 
-/* Card container */
 .card {
     background-color: white;
     padding: 20px;
@@ -47,7 +44,6 @@ label {
     margin-bottom: 20px;
 }
 
-/* Buttons */
 .stButton > button,
 .stDownloadButton > button {
     background-color: #16a34a !important;
@@ -58,7 +54,6 @@ label {
     width: 100%;
 }
 
-/* Inputs */
 input, textarea, select {
     color: black !important;
 }
@@ -89,12 +84,12 @@ def grade(mark):
     else:
         return "D", "Fail"
 
-# ---------------- ML SUGGESTION ----------------
+# ---------------- ML SUGGESTION (NO EMOJIS) ----------------
 def lr_suggestion(marks):
     X = np.arange(len(marks)).reshape(-1, 1)
     model = LinearRegression()
     model.fit(X, marks)
-    return "Overall performance is improving 👍" if model.coef_[0] > 0 else "Needs more practice 📘"
+    return "Overall performance is improving" if model.coef_[0] > 0 else "Needs more practice"
 
 # ---------------- SAVE TO EXCEL ----------------
 def save_to_excel(data, file="student_records.xlsx"):
@@ -218,11 +213,11 @@ if st.button("Generate Marksheet"):
 
         pdf_path = generate_pdf(name, roll, subjects, marks, summary)
 
-        st.success("✅ Marksheet Generated Successfully")
+        st.success("Marksheet generated successfully")
 
         with open(pdf_path, "rb") as f:
             st.download_button(
-                "📥 Download Marksheet PDF",
+                "Download Marksheet PDF",
                 f,
                 file_name=f"{roll}_Marksheet.pdf",
                 mime="application/pdf"
