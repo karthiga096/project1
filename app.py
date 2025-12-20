@@ -114,17 +114,22 @@ if st.button("Generate Marksheet"):
     # ----------------- PDF Generation -----------------
     pdf = FPDF()
     pdf.add_page()
+
+    # Page background
+    pdf.set_fill_color(240, 248, 255)
+    pdf.rect(0, 0, 210, 297, 'F')
+
     pdf.set_font("Arial", 'B', 16)
     pdf.set_text_color(0,0,0)
 
-    # College name
+    # College Name
     pdf.set_y(10)
     pdf.cell(0, 10, college_name, ln=True, align="C")
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
-    pdf.ln(15)  # Space for photo
+    pdf.ln(15)
 
-    # Student Photo (top-right)
+    # Student Photo
     if photo_file is not None:
         image = Image.open(photo_file)
         image_path = "temp_photo.png"
@@ -140,9 +145,9 @@ if st.button("Generate Marksheet"):
     pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True)
     pdf.ln(5)
 
-    # Table Header - white cells, black border
-    pdf.set_fill_color(255, 255, 255)
-    pdf.set_text_color(0,0,0)
+    # Table Header
+    pdf.set_fill_color(0, 102, 204)  # Blue header
+    pdf.set_text_color(255,255,255)
     pdf.set_draw_color(0,0,0)
     pdf.set_line_width(0.3)
     pdf.cell(50, 10, "Subject", 1, 0, 'C', fill=True)
@@ -151,8 +156,15 @@ if st.button("Generate Marksheet"):
     pdf.cell(25, 10, "Result", 1, 0, 'C', fill=True)
     pdf.cell(65, 10, "Suggestion", 1, 1, 'C', fill=True)
 
-    # Table Rows - white background, black text
+    # Table Rows - alternating colors
+    fill = False
     for sub, mark in marks.items():
+        if fill:
+            pdf.set_fill_color(220, 230, 241)  # Light grayish-blue
+        else:
+            pdf.set_fill_color(255, 255, 255)
+        fill = not fill
+        pdf.set_text_color(0,0,0)
         pdf.cell(50, 10, sub, 1, 0, 'C', fill=True)
         pdf.cell(25, 10, str(mark), 1, 0, 'C', fill=True)
         pdf.cell(25, 10, grade(mark), 1, 0, 'C', fill=True)
@@ -165,8 +177,10 @@ if st.button("Generate Marksheet"):
         if medical_cutoff != "N/A":
             pdf.cell(0,8,f"Medical Cutoff: {medical_cutoff}", ln=True)
 
+    # Save PDF
     pdf_output = f"{name}_marksheet.pdf"
     pdf.output(pdf_output)
 
+    # Download
     with open(pdf_output, "rb") as f:
         st.download_button("📥 Download Marksheet PDF", f, file_name=pdf_output, mime="application/pdf")
