@@ -127,69 +127,69 @@ if st.button("Generate Marksheet & PDF"):
         table_data.append([sub, mark, g, suggestion])
     st.table(table_data)
 
-    # -------------------- PDF GENERATION --------------------
+    # -------------------- PDF GENERATION (Compact) --------------------
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=10)
+    pdf.set_auto_page_break(auto=True, margin=8)
 
     # Header
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 8, "Student Marksheet", ln=True, align="C")
-    pdf.ln(3)
+    pdf.set_font("Arial", "B", 13)
+    pdf.cell(0, 7, "Student Marksheet", ln=True, align="C")
+    pdf.ln(2)
 
     # Student info
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(40, 6, f"Name: {name}", border=1)
-    pdf.cell(30, 6, f"Roll No: {roll}", border=1)
-    pdf.cell(40, 6, f"Type: {student_type}", border=1)
-    pdf.cell(0, 6, f"Attendance: {attendance}%", border=1, ln=True)
-    pdf.ln(2)
+    pdf.set_font("Arial", "", 9)
+    pdf.cell(35, 5, f"Name: {name}", border=1)
+    pdf.cell(28, 5, f"Roll No: {roll}", border=1)
+    pdf.cell(35, 5, f"Type: {student_type}", border=1)
+    pdf.cell(0, 5, f"Attendance: {attendance}%", border=1, ln=True)
+    pdf.ln(1)
 
     # Photo
     if photo:
         image = Image.open(photo)
         tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
         image.save(tmp_file.name)
-        pdf.image(tmp_file.name, x=150, y=15, w=25)
+        pdf.image(tmp_file.name, x=150, y=15, w=20)
 
     # Table header
-    pdf.set_font("Arial", "B", 10)
-    pdf.cell(50, 6, "Subject", border=1, align="C")
-    pdf.cell(20, 6, "Marks", border=1, align="C")
-    pdf.cell(25, 6, "Grade", border=1, align="C")
-    pdf.cell(50, 6, "Suggestion", border=1, align="C")
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(45, 5, "Subject", border=1, align="C")
+    pdf.cell(18, 5, "Marks", border=1, align="C")
+    pdf.cell(22, 5, "Grade", border=1, align="C")
+    pdf.cell(45, 5, "Suggestion", border=1, align="C")
     pdf.ln()
 
     # Table rows
-    pdf.set_font("Arial", "", 10)
+    pdf.set_font("Arial", "", 9)
     for sub, mark in marks.items():
         g, suggestion, color = grade_calc(mark)
         pdf.set_fill_color(*color)
-        pdf.cell(50, 6, sub, border=1)
-        pdf.cell(20, 6, str(mark), border=1)
-        pdf.cell(25, 6, g, border=1)
-        pdf.cell(50, 6, suggestion, border=1, ln=True, fill=True)
+        pdf.cell(45, 5, sub, border=1)
+        pdf.cell(18, 5, str(mark), border=1)
+        pdf.cell(22, 5, g, border=1)
+        pdf.cell(45, 5, suggestion, border=1, ln=True, fill=True)
 
     # Totals
-    pdf.ln(2)
-    pdf.cell(50, 6, "Total", border=1)
-    pdf.cell(20, 6, str(total), border=1)
-    pdf.cell(25, 6, "", border=1)
-    pdf.cell(50, 6, "", border=1, ln=True)
+    pdf.ln(1)
+    pdf.cell(45, 5, "Total", border=1)
+    pdf.cell(18, 5, str(total), border=1)
+    pdf.cell(22, 5, "", border=1)
+    pdf.cell(45, 5, "", border=1, ln=True)
 
-    pdf.cell(50, 6, "Average", border=1)
-    pdf.cell(20, 6, f"{avg:.2f}", border=1)
-    pdf.cell(25, 6, "", border=1)
-    pdf.cell(50, 6, "", border=1, ln=True)
+    pdf.cell(45, 5, "Average", border=1)
+    pdf.cell(18, 5, f"{avg:.2f}", border=1)
+    pdf.cell(22, 5, "", border=1)
+    pdf.cell(45, 5, "", border=1, ln=True)
 
     # School cutoffs
     if student_type == "School Student":
         if group == "Biology":
             med_cutoff = marks["Biology"] + (marks["Physics"] + marks["Chemistry"])/2
-            pdf.ln(2)
-            pdf.cell(0, 6, f"Medical Cutoff: {med_cutoff}", ln=True)
+            pdf.ln(1)
+            pdf.cell(0, 5, f"Medical Cutoff: {med_cutoff}", ln=True)
         eng_cutoff = marks.get("Maths",0) + (marks.get("Physics",0)+marks.get("Chemistry",0))/2
-        pdf.cell(0, 6, f"Engineering Cutoff: {eng_cutoff}", ln=True)
+        pdf.cell(0, 5, f"Engineering Cutoff: {eng_cutoff}", ln=True)
 
     # Save PDF
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
