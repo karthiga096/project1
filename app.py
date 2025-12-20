@@ -2,7 +2,6 @@ import streamlit as st
 from fpdf import FPDF
 import pandas as pd
 from PIL import Image
-import base64
 
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
@@ -16,8 +15,7 @@ label, .stMarkdown p, .stTextInput label, .stNumberInput label {color: black !im
 .stTextInput>div>div>input,
 .stNumberInput>div>div>input,
 .stSelectbox>div>div>select,
-.stFileUploader>div>div>input {color: black !important; background-color: white !important; border: 2px solid #000000 !important; font-weight: bold;}
-.stTable td, .stTable th {color: black !important; background-color: white !important;}
+.stFileUploader>div>div>input {color: black !important; background-color: white !important; border: 1px solid #000000 !important;}
 .stButton>button {background-color: #4CAF50; color: white; font-weight: bold; border-radius: 10px; padding: 8px 16px;}
 </style>
 """, unsafe_allow_html=True)
@@ -51,11 +49,6 @@ def suggestion(mark):
     if mark >= 75: return "Excellent performance"
     elif mark >= 50: return "Average, work harder"
     else: return "Failed, must retake"
-
-def emoji_feedback(mark):
-    if mark >= 75: return "😄"
-    elif mark >= 50: return "😐"
-    else: return "😢"
 
 # ----------------- Subjects -----------------
 school_groups = {
@@ -104,14 +97,12 @@ elif student_type == "College Student":
 # ----------------- Generate Marksheet -----------------
 if st.button("Generate Marksheet"):
     st.subheader("📝 Marksheet")
-    # Prepare table data
     data = []
     row_colors = []
     for sub, mark in marks.items():
         data.append({"Subject": sub, "Marks": mark, "Grade": grade(mark),
-                     "Result": pass_fail(mark), "Suggestion": suggestion(mark),
-                     "Emoji": emoji_feedback(mark)})
-        # Color coding
+                     "Result": pass_fail(mark), "Suggestion": suggestion(mark)})
+        # Color coding for PDF only
         if mark >= 75:
             row_colors.append("#90EE90")  # Light Green
         elif mark >= 50:
@@ -120,11 +111,7 @@ if st.button("Generate Marksheet"):
             row_colors.append("#FFA07A")  # Light Red
 
     df = pd.DataFrame(data)
-
-    # Display colored table in Streamlit
-    def highlight_rows(row_idx):
-        return ['background-color: {}'.format(row_colors[row_idx])] * len(df.columns)
-    st.dataframe(df.style.apply(lambda x: highlight_rows(x.name), axis=1))
+    st.dataframe(df)  # Streamlit table clean, no colors
 
     if student_type == "School Student":
         st.markdown(f"**Total Marks:** {total}")
@@ -142,7 +129,6 @@ if st.button("Generate Marksheet"):
     pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
     pdf.ln(5)
 
-    # Student Photo
     if photo_file is not None:
         image = Image.open(photo_file)
         image_path = "temp_photo.png"
@@ -152,11 +138,11 @@ if st.button("Generate Marksheet"):
     pdf.set_font("Arial", '', 12)
     pdf.set_text_color(0,0,0)
 
-    pdf.cell(0, 8, f"Name: {name}", ln=True, fill=True)
-    pdf.cell(0, 8, f"Roll Number: {roll}", ln=True, fill=True)
-    pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True, fill=True)
-    pdf.cell(0, 8, f"Parent Email: {parent_email}", ln=True, fill=True)
-    pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True, fill=True)
+    pdf.cell(0, 8, f"Name: {name}", ln=True)
+    pdf.cell(0, 8, f"Roll Number: {roll}", ln=True)
+    pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True)
+    pdf.cell(0, 8, f"Parent Email: {parent_email}", ln=True)
+    pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True)
     pdf.ln(5)
 
     # Table Header
@@ -165,24 +151,22 @@ if st.button("Generate Marksheet"):
     pdf.cell(25, 8, "Marks", 1, 0, 'C', fill=True)
     pdf.cell(25, 8, "Grade", 1, 0, 'C', fill=True)
     pdf.cell(25, 8, "Result", 1, 0, 'C', fill=True)
-    pdf.cell(45, 8, "Suggestion", 1, 0, 'C', fill=True)
-    pdf.cell(15, 8, "Emoji", 1, 1, 'C', fill=True)
+    pdf.cell(65, 8, "Suggestion", 1, 1, 'C', fill=True)
 
-    # Table Rows with color
+    # Table Rows with colored boxes
     for i, (sub, mark) in enumerate(marks.items()):
         if mark >= 75:
-            pdf.set_fill_color(144, 238, 144)  # Light green
+            pdf.set_fill_color(144, 238, 144)
         elif mark >= 50:
-            pdf.set_fill_color(255, 255, 153)  # Light yellow
+            pdf.set_fill_color(255, 255, 153)
         else:
-            pdf.set_fill_color(255, 160, 122)  # Light red
+            pdf.set_fill_color(255, 160, 122)
         pdf.set_text_color(0,0,0)
         pdf.cell(50, 8, sub, 1, 0, 'C', fill=True)
         pdf.cell(25, 8, str(mark), 1, 0, 'C', fill=True)
         pdf.cell(25, 8, grade(mark), 1, 0, 'C', fill=True)
         pdf.cell(25, 8, pass_fail(mark), 1, 0, 'C', fill=True)
-        pdf.cell(45, 8, suggestion(mark), 1, 0, 'C', fill=True)
-        pdf.cell(15, 8, "", 1, 1, 'C', fill=True)  # Emoji omitted in PDF
+        pdf.cell(65, 8, suggestion(mark), 1, 1, 'C', fill=True)
 
     if student_type == "School Student":
         pdf.ln(3)
