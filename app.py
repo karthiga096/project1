@@ -69,18 +69,57 @@ def suggestion(mark):
     elif mark >= 50: return "Average ⚠️"
     else: return "Poor ❌"
 
-# ----------------- Subjects -----------------
+# ----------------- School Groups -----------------
 school_groups = {
     "Biology": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Biology"],
     "Computer Science": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Computer Science"],
     "Commerce": ["Tamil", "English", "Accountancy", "Economics", "Commerce", "Maths"],
-    "History / Arts": ["Tamil", "English", "History", "Civics", "Geography", "Economics"]
+    "History / Arts": ["Tamil", "English", "History", "Civics", "Geography", "Economics"],
+    "Fine Arts": ["Tamil", "English", "Drawing", "Music", "History", "Geography"]
 }
 
+# ----------------- College Departments (Sem 1–8) -----------------
 college_departments = {
-    "CSE": {"Semester 1": ["Maths", "Physics", "Programming", "Electronics", "English", "Lab"]},
-    "ECE": {"Semester 1": ["Maths", "Physics", "Circuits", "Electronics", "English", "Lab"]},
-    "Biotechnology": {"Semester 1": ["Biology", "Chemistry", "Maths", "Physics", "English", "Lab"]}
+    "CSE": {
+        "Semester 1": ["Maths 1", "Physics 1", "Programming 1", "Electronics", "English", "Lab 1"],
+        "Semester 2": ["Maths 2", "Data Structures", "Physics 2", "DBMS", "English", "Lab 2"],
+        "Semester 3": ["Maths 3", "OOP", "Digital Logic", "Networks", "English", "Lab 3"],
+        "Semester 4": ["Algorithms", "OS", "Database", "Software Eng", "English", "Lab 4"],
+        "Semester 5": ["AI", "ML", "Cloud Computing", "Web Dev", "English", "Lab 5"],
+        "Semester 6": ["Cybersecurity", "Big Data", "Embedded Systems", "Project 1", "English", "Lab 6"],
+        "Semester 7": ["Mobile Dev", "IoT", "Project 2", "Entrepreneurship", "English", "Lab 7"],
+        "Semester 8": ["Capstone Project", "Internship", "Ethics", "English", "Lab 8", "Elective"]
+    },
+    "ECE": {
+        "Semester 1": ["Maths 1", "Physics 1", "Circuits 1", "Electronics 1", "English", "Lab 1"],
+        "Semester 2": ["Maths 2", "Signals", "Electronics 2", "Communication", "English", "Lab 2"],
+        "Semester 3": ["Digital Logic", "Microprocessors", "Networks", "Control Systems", "English", "Lab 3"],
+        "Semester 4": ["VLSI", "Embedded Systems", "Electromagnetics", "Software Eng", "English", "Lab 4"],
+        "Semester 5": ["AI Circuits", "Signal Processing", "Communication 2", "Project 1", "English", "Lab 5"],
+        "Semester 6": ["IoT", "Networking 2", "Cybersecurity", "Project 2", "English", "Lab 6"],
+        "Semester 7": ["Mobile Comm", "VLSI 2", "Project 3", "Entrepreneurship", "English", "Lab 7"],
+        "Semester 8": ["Capstone Project", "Internship", "Ethics", "English", "Lab 8", "Elective"]
+    },
+    "Biotechnology": {
+        "Semester 1": ["Biology 1", "Chemistry 1", "Maths 1", "Physics 1", "English", "Lab 1"],
+        "Semester 2": ["Genetics", "Microbiology", "Chemistry 2", "Maths 2", "English", "Lab 2"],
+        "Semester 3": ["Biochemistry", "Immunology", "Cell Biology", "English", "Lab 3", "Elective 1"],
+        "Semester 4": ["Genomics", "Molecular Biology", "Bioinformatics", "English", "Lab 4", "Elective 2"],
+        "Semester 5": ["Bioprocess", "Pharmacology", "Microbial Tech", "English", "Lab 5", "Elective 3"],
+        "Semester 6": ["Genetic Engineering", "Plant Biotechnology", "Animal Biotechnology", "English", "Lab 6", "Elective 4"],
+        "Semester 7": ["Industrial Biotech", "Research Methods", "Project 1", "English", "Lab 7", "Elective 5"],
+        "Semester 8": ["Capstone Project", "Internship", "Ethics", "English", "Lab 8", "Elective 6"]
+    },
+    "Mechanical": {
+        "Semester 1": ["Maths 1", "Physics 1", "Engineering Mechanics", "Drawing", "English", "Lab 1"],
+        "Semester 2": ["Maths 2", "Thermodynamics 1", "Material Science", "Drawing 2", "English", "Lab 2"],
+        "Semester 3": ["Fluid Mechanics", "Thermodynamics 2", "Manufacturing", "English", "Lab 3", "Elective 1"],
+        "Semester 4": ["Dynamics", "Machine Design", "CAD", "English", "Lab 4", "Elective 2"],
+        "Semester 5": ["Mechatronics", "Heat Transfer", "Vibrations", "English", "Lab 5", "Elective 3"],
+        "Semester 6": ["Automobile Eng", "Robotics", "Project 1", "English", "Lab 6", "Elective 4"],
+        "Semester 7": ["Industrial Eng", "Project 2", "Entrepreneurship", "English", "Lab 7", "Elective 5"],
+        "Semester 8": ["Capstone Project", "Internship", "Ethics", "English", "Lab 8", "Elective 6"]
+    }
 }
 
 marks = {}
