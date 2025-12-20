@@ -13,52 +13,54 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- ATTRACTIVE THEME ----------------
+# ---------------- ACCESSIBLE GREEN THEME (BLACK TEXT) ----------------
 st.markdown("""
 <style>
 .stApp {
     background: linear-gradient(135deg, #f0fff4, #c6f6d5);
 }
 
-.main {
+/* Force ALL text to black */
+html, body, [class*="css"] {
+    color: black !important;
+}
+
+/* Headings */
+h1, h2, h3 {
+    color: black !important;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* Labels */
+label {
+    color: black !important;
+    font-weight: 600;
+}
+
+/* Card container */
+.card {
     background-color: white;
     padding: 20px;
     border-radius: 15px;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+    margin-bottom: 20px;
 }
 
-h1, h2, h3 {
-    color: #065f46;
-    text-align: center;
-}
-
-label {
-    color: #064420;
-    font-weight: bold;
-}
-
-.stButton > button {
-    background-color: #16a34a;
-    color: white;
-    font-size: 18px;
-    border-radius: 12px;
-    padding: 10px;
-    width: 100%;
-}
-
+/* Buttons */
+.stButton > button,
 .stDownloadButton > button {
-    background-color: #15803d;
-    color: white;
+    background-color: #16a34a !important;
+    color: white !important;
     font-size: 18px;
     border-radius: 12px;
     padding: 10px;
     width: 100%;
 }
 
-.card {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+/* Inputs */
+input, textarea, select {
+    color: black !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -70,7 +72,7 @@ st.image(
 )
 
 st.title("🎓 Smart School Marksheet System")
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("---")
 
 # ---------------- GRADE FUNCTION ----------------
 def grade(mark):
@@ -109,12 +111,12 @@ def generate_pdf(name, roll, subjects, marks, summary):
 
     pdf.set_font("Arial", "B", 18)
     pdf.cell(0, 12, "SCHOOL MARKSHEET", ln=True, align="C")
-    pdf.ln(5)
+    pdf.ln(6)
 
     pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 8, f"Name : {name}", ln=True)
-    pdf.cell(0, 8, f"Roll No : {roll}", ln=True)
-    pdf.ln(5)
+    pdf.cell(0, 8, f"Student Name : {name}", ln=True)
+    pdf.cell(0, 8, f"Roll Number  : {roll}", ln=True)
+    pdf.ln(6)
 
     pdf.set_font("Arial", "B", 11)
     pdf.cell(55, 10, "Subject", 1)
@@ -142,10 +144,11 @@ def generate_pdf(name, roll, subjects, marks, summary):
         pdf.cell(35, 10, r, 1, fill=True)
         pdf.ln()
 
-    pdf.ln(4)
+    pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 8, f"Overall Result : {'PASS' if overall_pass else 'FAIL'}", ln=True)
 
+    pdf.set_font("Arial", "", 11)
     for k, v in summary.items():
         pdf.cell(0, 8, f"{k} : {v}", ln=True)
 
@@ -155,16 +158,19 @@ def generate_pdf(name, roll, subjects, marks, summary):
     pdf.output(temp.name)
     return temp.name
 
-# ---------------- INPUT CARD ----------------
+# ---------------- INPUT FORM ----------------
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    name = st.text_input("👤 Student Name")
-    roll = st.text_input("🆔 Roll Number")
-    parent_mobile = st.text_input("📱 Parent Mobile Number")
-    parent_email = st.text_input("📧 Parent Email")
+    name = st.text_input("Student Name")
+    roll = st.text_input("Roll Number")
+    parent_mobile = st.text_input("Parent Mobile Number")
+    parent_email = st.text_input("Parent Email")
 
-    group = st.selectbox("🎯 Select Group", ["Biology", "Computer Science", "History", "Commerce"])
+    group = st.selectbox(
+        "Select Group",
+        ["Biology", "Computer Science", "History", "Commerce"]
+    )
 
     if group == "Biology":
         subjects = ["Tamil", "English", "Maths", "Physics", "Chemistry", "Biology"]
@@ -175,15 +181,15 @@ with st.container():
     else:
         subjects = ["Tamil", "English", "Accountancy", "Business Maths", "Economics", "Commerce"]
 
-    st.subheader("📘 Enter Subject Marks")
+    st.subheader("Enter Subject Marks")
     marks = [st.number_input(sub, 0, 100) for sub in subjects]
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- BUTTON ----------------
-if st.button("✅ Generate Marksheet"):
+# ---------------- GENERATE BUTTON ----------------
+if st.button("Generate Marksheet"):
     if not all([name, roll, parent_mobile, parent_email]):
-        st.error("❌ Please fill all details")
+        st.error("Please fill all details")
     else:
         total = sum(marks)
         average = round(total / len(marks), 2)
@@ -212,7 +218,7 @@ if st.button("✅ Generate Marksheet"):
 
         pdf_path = generate_pdf(name, roll, subjects, marks, summary)
 
-        st.success("🎉 Marksheet Generated Successfully!")
+        st.success("✅ Marksheet Generated Successfully")
 
         with open(pdf_path, "rb") as f:
             st.download_button(
