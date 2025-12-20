@@ -26,7 +26,7 @@ st.markdown(
 st.title("🎓 Student Mark Generation Portal")
 
 # ----------------- Inputs -----------------
-college_name = st.text_input("Enter College/School Name", "My College")
+college_name = st.text_input("Enter College/School Name", "KAMARAJ COLLEGE OF ENGINEERING AND TECHNOLOGY")
 student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
 name = st.text_input("Student Name")
 roll = st.text_input("Roll Number")
@@ -77,6 +77,7 @@ college_departments = {
 
 marks = {}
 
+# ----------------- Inputs for Subjects -----------------
 if student_type == "School Student":
     group = st.selectbox("Select Group", list(school_groups.keys()))
     subjects = school_groups[group]
@@ -122,8 +123,12 @@ if st.button("Generate Marksheet"):
     # ----------------- PDF Generation -----------------
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, college_name, ln=True, align="C")  # College name
+
+    # Add Unicode font for emojis
+    pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
+    pdf.set_font("DejaVu", 'B', 16)
+
+    pdf.cell(0, 10, college_name, ln=True, align="C")
     pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
     pdf.ln(5)
 
@@ -134,7 +139,7 @@ if st.button("Generate Marksheet"):
         image.save(image_path)
         pdf.image(image_path, x=160, y=10, w=30, h=30)
 
-    pdf.set_font("Arial", '', 12)
+    pdf.set_font("DejaVu", '', 12)
     pdf.set_text_color(0,0,0)
     pdf.set_fill_color(255,255,255)
     pdf.cell(0, 8, f"Name: {name}", ln=True, fill=True)
