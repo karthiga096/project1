@@ -1,4 +1,19 @@
 import streamlit as st
+
+# ---------- PAGE CONFIG ----------
+st.set_page_config(
+    page_title="Student Mark Portal",
+    page_icon="🎓",
+    layout="centered"
+)
+
+# ---------- CUSTOM CSS ----------
+st.markdown("""
+<style>
+/* Background */
+.stApp {
+    background: linear
+Aimport streamlit as st
 import pandas as pd
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib.styles import getSampleStyleSheet
