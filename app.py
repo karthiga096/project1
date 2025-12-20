@@ -20,7 +20,7 @@ st.markdown(
     }
     .stTable td, .stTable th {
         color: black;
-        background-color: #ffffff;
+        background-color: #ffffff !important;
     }
     .stButton>button {
         background-color: #4CAF50;
@@ -29,18 +29,12 @@ st.markdown(
         border-radius: 10px;
         padding: 8px 16px;
     }
-    .stTextInput>div>div>input, .stNumberInput>div>div>input {
+    .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select {
         border: 2px solid #000000;
         border-radius: 5px;
         background-color: #ffffff;
         color: black;
         font-weight: bold;
-    }
-    .stSelectbox>div>div>select {
-        background-color: #ffffff;
-        color: black;
-        border: 2px solid #000000;
-        border-radius: 5px;
     }
     </style>
     """,
@@ -68,11 +62,6 @@ def suggestion(mark):
     elif mark >= 50: return "Average, work harder"
     elif mark >= 35: return "Needs improvement"
     else: return "Failed, must retake"
-
-def color_code(mark):
-    if mark >= 60: return (255, 255, 255)  # White background for all marks
-    elif mark >= 35: return (255, 255, 255)
-    else: return (255, 255, 255)
 
 # ----------------- Subjects -----------------
 school_groups = {
@@ -158,16 +147,17 @@ if st.button("Generate Marksheet"):
         pdf.image(image_path, x=160, y=10, w=30, h=30)
 
     pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 8, f"Name: {name}", ln=True)
-    pdf.cell(0, 8, f"Roll Number: {roll}", ln=True)
-    pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True)
-    pdf.cell(0, 8, f"Parent Email: {parent_email}", ln=True)
-    pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True)
+    pdf.set_text_color(0,0,0)
+    pdf.set_fill_color(255,255,255)
+    pdf.cell(0, 8, f"Name: {name}", ln=True, fill=True)
+    pdf.cell(0, 8, f"Roll Number: {roll}", ln=True, fill=True)
+    pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True, fill=True)
+    pdf.cell(0, 8, f"Parent Email: {parent_email}", ln=True, fill=True)
+    pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True, fill=True)
     pdf.ln(5)
 
     # Table Header
     pdf.set_fill_color(255,255,255)
-    pdf.set_text_color(0,0,0)
     pdf.cell(60, 8, "Subject", 1, 0, 'C', fill=True)
     pdf.cell(30, 8, "Marks", 1, 0, 'C', fill=True)
     pdf.cell(30, 8, "Grade", 1, 0, 'C', fill=True)
@@ -177,7 +167,6 @@ if st.button("Generate Marksheet"):
     # Table Rows
     for sub, mark in marks.items():
         pdf.set_fill_color(255,255,255)
-        pdf.set_text_color(0,0,0)
         pdf.cell(60, 8, sub, 1, 0, 'C', fill=True)
         pdf.cell(30, 8, str(mark), 1, 0, 'C', fill=True)
         pdf.cell(30, 8, grade(mark), 1, 0, 'C', fill=True)
