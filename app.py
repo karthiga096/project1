@@ -5,30 +5,26 @@ import pandas as pd
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 
-# ----------------- Custom CSS for Visibility -----------------
+# ----------------- Custom CSS for Attractive Theme -----------------
 st.markdown(
     """
     <style>
-    /* Body gradient background */
+    /* Body background */
     .stApp {
         background: linear-gradient(to right, #f5f7fa, #c3cfe2);
         color: black;
     }
 
-    /* Title & headers */
-    .stTitle, .stHeader, h1, h2, h3 {
+    /* Title and headers */
+    .stTitle, .stHeader, h1, h2, h3, h4, h5, h6 {
         color: black;
         font-family: 'Arial', sans-serif;
         font-weight: bold;
     }
 
-    /* Inputs visibility */
-    .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select {
-        border: 2px solid #4CAF50;
-        border-radius: 5px;
+    /* Tables */
+    .stTable td, .stTable th {
         color: black;
-        font-weight: bold;
-        background-color: white;
     }
 
     /* Buttons */
@@ -40,9 +36,12 @@ st.markdown(
         padding: 8px 16px;
     }
 
-    /* Table text */
-    .stTable td, .stTable th {
+    /* Input boxes */
+    .stTextInput>div>div>input, .stNumberInput>div>div>input {
+        border: 2px solid #4CAF50;
+        border-radius: 5px;
         color: black;
+        font-weight: bold;
     }
     </style>
     """,
@@ -52,6 +51,7 @@ st.markdown(
 st.title("🎓 Student Mark Generation Portal")
 
 # ----------------- Helper Functions -----------------
+
 def grade(mark):
     if mark >= 90:
         return "A+"
@@ -85,13 +85,13 @@ def suggestion(mark):
 
 def color_code(mark):
     if mark >= 60:
-        return (144, 238, 144)
+        return (144, 238, 144)  # Green
     elif mark >= 35:
-        return (255, 255, 102)
+        return (255, 255, 102)  # Yellow
     else:
-        return (255, 102, 102)
+        return (255, 102, 102)  # Red
 
-# ----------------- School & College Data -----------------
+# ----------------- School Subjects -----------------
 school_groups = {
     "Biology": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Biology"],
     "Computer Science": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Computer Science"],
@@ -99,6 +99,7 @@ school_groups = {
     "History / Arts": ["Tamil", "English", "History", "Civics", "Geography", "Economics"]
 }
 
+# ----------------- College Subjects Example -----------------
 college_departments = {
     "CSE": {
         "Semester 1": ["Maths", "Physics", "Programming", "Electronics", "English", "Lab"],
@@ -114,12 +115,8 @@ college_departments = {
     }
 }
 
-# ----------------- Inputs -----------------
+# ----------------- Common Inputs -----------------
 student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
-
-# Upload student photo
-photo = st.file_uploader("Upload Student Photo", type=["jpg","jpeg","png"])
-
 name = st.text_input("Student Name")
 roll = st.text_input("Roll Number")
 attendance = st.number_input("Attendance Percentage", 0, 100, 90)
@@ -128,6 +125,7 @@ parent_email = st.text_input("Parent Email")
 
 marks = {}
 
+# ----------------- Student Specific Inputs -----------------
 if student_type == "School Student":
     group = st.selectbox("Select Group", list(school_groups.keys()))
     subjects = school_groups[group]
@@ -138,10 +136,12 @@ if student_type == "School Student":
 
     total = sum(marks.values())
     average = total / len(subjects)
+
     maths = marks.get("Maths",0)
     physics = marks.get("Physics",0)
     chemistry = marks.get("Chemistry",0)
     biology = marks.get("Biology",0)
+
     engineering_cutoff = maths + (physics + chemistry)/2
     medical_cutoff = biology + (physics + chemistry)/2 if "Biology" in subjects else "N/A"
 
@@ -158,12 +158,6 @@ elif student_type == "College Student":
 if st.button("Generate Marksheet"):
 
     st.subheader("📝 Marksheet")
-    
-    # Display photo
-    if photo:
-        st.image(photo, width=120)
-    
-    # Prepare table
     data = []
     for sub, mark in marks.items():
         data.append({
@@ -173,6 +167,7 @@ if st.button("Generate Marksheet"):
             "Result": pass_fail(mark),
             "Suggestion": suggestion(mark)
         })
+
     df = pd.DataFrame(data)
     st.table(df)
 
@@ -183,17 +178,14 @@ if st.button("Generate Marksheet"):
         if medical_cutoff != "N/A":
             st.markdown(f"**Medical Cutoff:** {medical_cutoff}")
 
-    # ----------------- PDF -----------------
+    # ----------------- PDF Generation -----------------
     pdf = FPDF()
     pdf.add_page()
-    
-    # Add student photo
-    if photo:
-        pdf.image(photo, x=160, y=8, w=30)  # top right corner
 
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "Student Marksheet", ln=True, align="C")
     pdf.ln(5)
+
     pdf.set_font("Arial", '', 12)
     pdf.cell(0, 8, f"Name: {name}", ln=True)
     pdf.cell(0, 8, f"Roll Number: {roll}", ln=True)
@@ -202,7 +194,6 @@ if st.button("Generate Marksheet"):
     pdf.cell(0, 8, f"Parent Mobile: {parent_mobile}", ln=True)
     pdf.ln(5)
 
-    # Table header
     pdf.set_fill_color(200,200,200)
     pdf.cell(60, 8, "Subject", 1, 0, 'C', fill=True)
     pdf.cell(30, 8, "Marks", 1, 0, 'C', fill=True)
@@ -210,7 +201,6 @@ if st.button("Generate Marksheet"):
     pdf.cell(30, 8, "Result", 1, 0, 'C', fill=True)
     pdf.cell(40, 8, "Suggestion", 1, 1, 'C', fill=True)
 
-    # Table rows
     for sub, mark in marks.items():
         r,g,b = color_code(mark)
         pdf.set_fill_color(r,g,b)
