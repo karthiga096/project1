@@ -1,22 +1,15 @@
 import streamlit as st
 from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 import tempfile
-import os
-import base64
 
 # ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="Student Marksheet Portal",
-    page_icon="🎓",
-    layout="wide"
-)
+st.set_page_config(page_title="Official Student Marksheet", page_icon="🎓", layout="wide")
+st.markdown("<h1 style='text-align:center;color:#00695c;'>🎓 Official Student Marksheet Generator</h1>", unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align:center;color:#00695c;'>🎓 Student Marksheet Generator</h1>", unsafe_allow_html=True)
-
-# ---------------- STUDENT DETAILS (LINE-BY-LINE) ----------------
+# ---------------- STUDENT DETAILS ----------------
 st.subheader("📘 Student Details")
 school_name = st.text_input("School / College Name")
 student_name = st.text_input("Student Name")
@@ -54,16 +47,16 @@ if student_type == "College Student":
         "CSE": ["DS", "OS", "DBMS", "Python", "Java", "Networks"],
         "ECE": ["Signals", "Electronics", "Microprocessor", "Comm Systems", "Maths", "Physics"],
         "Biotechnology": ["Genetics", "Biochemistry", "Microbiology", "Cell Biology", "Chemistry", "Physics"],
-        "AIDS": ["AI Basics", "Data Science", "Python", "Statistics", "ML", "Python Project"],
+        "AIDS": ["AI Basics", "Data Science", "Python Programming", "Statistics", "ML Algorithms", "Project Work"],
         "IT": ["Networking", "Python", "Web Dev", "DBMS", "Linux", "Cyber Security"],
-        "AIML": ["AI", "ML", "DL", "Python", "Data Analytics", "Project"],
-        "EEE": ["Circuits", "Electronics", "Power Systems", "Control Systems", "Maths", "Physics"],
-        "Mechanical": ["Thermodynamics", "Mechanics", "Machine Design", "CAD", "Materials", "Manufacturing"],
-        "Civil": ["Surveying", "Concrete", "Structures", "Fluid Mechanics", "Construction", "Design"]
+        "AIML": ["AI Fundamentals", "Machine Learning", "Deep Learning", "Python Programming", "Data Analytics", "Project Work"],
+        "EEE": ["Circuits", "Electronics", "Power Systems", "Control Systems", "Electrical Machines", "Instrumentation"],
+        "Mechanical": ["Thermodynamics", "Mechanics", "Machine Design", "CAD", "Materials Science", "Manufacturing Processes"],
+        "Civil": ["Surveying", "Concrete Technology", "Structural Analysis", "Fluid Mechanics", "Construction Management", "Design Project"]
     }
     subjects = college_subjects[department]
 
-# ---------------- MARK INPUTS (LINE-BY-LINE) ----------------
+# ---------------- ENTER MARKS ----------------
 st.subheader("📘 Enter Marks")
 marks = {}
 for sub in subjects:
@@ -71,22 +64,22 @@ for sub in subjects:
 
 # ---------------- GRADE LOGIC ----------------
 def grade_calc(mark):
-    if mark >= 90: return "A+", "Pass", colors.HexColor("#66ff66")  # Bright Green
-    elif mark >= 75: return "A", "Pass", colors.HexColor("#99ff99")  # Light Green
-    elif mark >= 60: return "B", "Pass", colors.HexColor("#ffff99")  # Yellow
-    elif mark >= 50: return "C", "Pass", colors.HexColor("#ffcc99")  # Orange
-    else: return "D", "Fail", colors.HexColor("#ff6666")            # Red
+    if mark >= 90: return "A+", "Pass", colors.HexColor("#66ff66") # Bright Green
+    elif mark >= 75: return "A", "Pass", colors.HexColor("#99ff99") # Light Green
+    elif mark >= 60: return "B", "Pass", colors.HexColor("#ffff99") # Yellow
+    elif mark >= 50: return "C", "Pass", colors.HexColor("#ffcc99") # Orange
+    else: return "D", "Fail", colors.HexColor("#ff6666")           # Red
 
 # ---------------- GENERATE MARKSHEET ----------------
-if st.button("📄 Generate Marksheet"):
+if st.button("📄 Generate Official Marksheet"):
     total = sum(marks.values())
     avg = total / len(subjects)
 
-    # ---------- TABLE IN APP ----------
+    # ---------- STREAMLIT TABLE ----------
     st.subheader("📊 Marksheet Preview")
     table_display = [["Subject","Marks","Grade","Result"]]
     for sub in subjects:
-        g, r, _ = grade_calc(marks[sub])
+        g,r,_ = grade_calc(marks[sub])
         table_display.append([sub, marks[sub], g, r])
     st.table(table_display)
 
@@ -98,11 +91,13 @@ if st.button("📄 Generate Marksheet"):
     styles = getSampleStyleSheet()
     elements = []
 
-    # School/College Name
+    # ---------- HEADER ----------
     elements.append(Paragraph(f"<font size=18 color='#00695c'><b>{school_name}</b></font>", styles["Title"]))
-    elements.append(Spacer(1,8))
+    elements.append(Spacer(1,6))
+    elements.append(Paragraph("<b>Annual Examination Marksheet</b>", styles["Heading2"]))
+    elements.append(Spacer(1,10))
 
-    # Photo
+    # Photo Top-Right
     if photo:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as img_tmp:
             img_tmp.write(photo.getvalue())
@@ -120,38 +115,57 @@ if st.button("📄 Generate Marksheet"):
     elements.append(Paragraph(info_text, styles["Normal"]))
     elements.append(Spacer(1,10))
 
-    # Heading
-    elements.append(Paragraph("<b>ANNUAL EXAMINATION RESULT</b>", styles["Heading2"]))
-    elements.append(Spacer(1,10))
-
-    # Table
-    data = [["Subject","Marks","Grade","Pass / Fail"]]
+    # ---------- TABLE ----------
+    data = [["Subject","Marks","Grade","Pass/Fail"]]
     row_colors = []
     for sub in subjects:
-        g, r, c = grade_calc(marks[sub])
+        g,r,c = grade_calc(marks[sub])
         data.append([sub, str(marks[sub]), g, r])
         row_colors.append(c)
 
-    table_pdf = Table(data, colWidths=[140,50,50,70])
+    table = Table(data, colWidths=[140,50,50,70])
     style = TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#4db6ac")), # Header teal
+        ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#4db6ac")), # Teal header
         ("TEXTCOLOR",(0,0),(-1,0),colors.white),
         ("ALIGN",(0,0),(-1,-1),"CENTER"),
-        ("GRID",(0,0),(-1,-1),0.5,colors.HexColor("#80cbc4"))
+        ("GRID",(0,0),(-1,-1),0.8,colors.HexColor("#80cbc4")),
+        ("BOX",(0,0),(-1,-1),1,colors.HexColor("#4db6ac"))
     ])
-    for i, c in enumerate(row_colors, start=1):
-        style.add("BACKGROUND",(0,i),(-1,i),c)
-    table_pdf.setStyle(style)
-    elements.append(table_pdf)
+    for i,color in enumerate(row_colors,start=1):
+        style.add("BACKGROUND",(0,i),(-1,i),color)
+    table.setStyle(style)
+    elements.append(table)
 
     # Totals
     elements.append(Spacer(1,10))
     elements.append(Paragraph(f"<b>Total:</b> {total} &nbsp;&nbsp; <b>Average:</b> {avg:.2f}", styles["Normal"]))
+    elements.append(Spacer(1,10))
+
+    # Legend
+    legend_data = [
+        ["Legend","Color Meaning"],
+        ["A+/A","Excellent"],
+        ["B","Good"],
+        ["C","Average"],
+        ["D","Fail"]
+    ]
+    legend_colors = [colors.lightgrey, colors.HexColor("#66ff66"), colors.HexColor("#ffff99"), colors.HexColor("#ffcc99"), colors.HexColor("#ff6666")]
+    legend_table = Table(legend_data, colWidths=[80,150])
+    legend_style = TableStyle([
+        ("GRID",(0,0),(-1,-1),0.5,colors.HexColor("#80cbc4")),
+        ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#4db6ac")),
+        ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+        ("ALIGN",(0,0),(-1,-1),"CENTER")
+    ])
+    for i,color in enumerate(legend_colors,start=1):
+        legend_style.add("BACKGROUND",(0,i),(-1,i),color)
+    legend_table.setStyle(legend_style)
+    elements.append(legend_table)
 
     doc.build(elements)
 
     # ---------- DOWNLOAD ----------
     with open(pdf_path,"rb") as f:
         pdf_bytes = f.read()
-    st.success("✅ PDF Generated Successfully")
+    st.success("✅ Official PDF Marksheet Generated")
     st.download_button("⬇ Download PDF", pdf_bytes, f"{student_name}_marksheet.pdf", "application/pdf")
