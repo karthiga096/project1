@@ -1,171 +1,168 @@
 import streamlit as st
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer
+import pandas as pd
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 import tempfile
+import smtplib
+from email.message import EmailMessage
 
 # ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="Official Student Marksheet", page_icon="🎓", layout="wide")
-st.markdown("<h1 style='text-align:center;color:#00695c;'>🎓 Official Student Marksheet Generator</h1>", unsafe_allow_html=True)
+st.set_page_config(page_title="Marksheet Portal", layout="wide")
 
-# ---------------- STUDENT DETAILS ----------------
-st.subheader("📘 Student Details")
-school_name = st.text_input("School / College Name")
-student_name = st.text_input("Student Name")
-register_no = st.text_input("Register Number")
-dob = st.date_input("Date of Birth")
-father_name = st.text_input("Father Name")
-mother_name = st.text_input("Mother Name")
-attendance = st.number_input("Attendance %", 0, 100)
-photo = st.file_uploader("Upload Student Photo", ["png", "jpg", "jpeg"])
+# ---------------- CUSTOM THEME ----------------
+st.markdown("""
+<style>
+body {background-color: #fff0f5; font-family: 'Arial';}
+h1, h2, h3 {color: #8b004b;}
+.stButton>button {background-color:#8b004b; color:white; border-radius:10px; height:40px; width:200px;}
+.stTextInput>div>div>input {border-radius:5px; border:1px solid #8b004b;}
+.stSlider>div>div>div>div {background-color:#fde6ef;}
+</style>
+""", unsafe_allow_html=True)
 
-# ---------------- PARENT DETAILS ----------------
-st.subheader("👨‍👩‍👧 Parent Details")
-parent_mobile = st.text_input("Parent Mobile Number")
-parent_email = st.text_input("Parent Email")
+st.markdown("<h1 style='text-align:center;'>📘 STUDENT MARKSHEET PORTAL</h1>", unsafe_allow_html=True)
+
+# ---------------- FUNCTIONS ----------------
+def grade(m):
+    if m >= 90: return "O"
+    elif m >= 80: return "A+"
+    elif m >= 70: return "A"
+    elif m >= 60: return "B"
+    elif m >= 50: return "C"
+    elif m >= 40: return "D"
+    else: return "F"
 
 # ---------------- STUDENT TYPE ----------------
 student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
 
-# ---------------- SCHOOL MODULE ----------------
+# ---------------- INSTITUTE DETAILS ----------------
+st.subheader("🏫 Institute Details")
+inst_name = st.text_input("School / College Name")
+inst_addr = st.text_input("Address")
+year = st.text_input("Academic Year", "2024–2025")
+
+# ---------------- STUDENT DETAILS ----------------
+st.subheader("👤 Student Details")
+col1, col2 = st.columns([3,1])
+with col1:
+    name = st.text_input("Student Name")
+    roll = st.text_input("Roll Number")
+    attendance = st.slider("Attendance %", 0, 100)
+    parent_mobile = st.text_input("Parent Mobile")
+    parent_email = st.text_input("Parent Email")
+with col2:
+    photo = st.file_uploader("Upload Student Photo", ["jpg","png"])
+    if photo:
+        st.image(photo, width=150, caption="Student Photo")
+
+# ---------------- SUBJECT LOGIC ----------------
 if student_type == "School Student":
-    group = st.selectbox("Select Group", ["Biology", "Computer Science", "Commerce", "History"])
-    school_subjects = {
-        "Biology": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Biology"],
-        "Computer Science": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Computer Science"],
-        "Commerce": ["Tamil", "English", "Accountancy", "Economics", "Commerce", "Maths"],
-        "History": ["Tamil", "English", "History", "Civics", "Geography", "Economics"]
-    }
-    subjects = school_subjects[group]
+    group = st.selectbox("Group", ["Biology", "Computer Science", "Commerce", "History"])
+    if group == "Biology":
+        subjects = ["English","Tamil","Maths","Physics","Chemistry","Biology"]
+    elif group == "Computer Science":
+        subjects = ["English","Tamil","Maths","Physics","Chemistry","Computer Science"]
+    else:
+        subjects = ["English","Tamil","Maths","Accountancy","Economics","Business Studies"]
+else:
+    dept = st.selectbox("Department", ["CSE","ECE","Biotechnology","AIML","Mechanical","Civil"])
+    sem = st.selectbox("Semester", [f"Semester {i}" for i in range(1,9)])
+    if dept == "CSE":
+        subjects = ["Maths","Python","DSA","OS","DBMS","Networks"]
+    elif dept == "ECE":
+        subjects = ["Maths","Circuits","Signals","VLSI","Embedded","Control"]
+    else:
+        subjects = ["Biochem","Genetics","Microbio","Immunology","Bioinformatics","Bioprocess"]
 
-# ---------------- COLLEGE MODULE ----------------
-if student_type == "College Student":
-    department = st.selectbox("Department", ["CSE","ECE","Biotechnology","AIDS","IT","AIML","EEE","Mechanical","Civil"])
-    semester = st.selectbox("Semester", [f"SEM {i}" for i in range(1, 9)])
-    college_subjects = {
-        "CSE": ["DS", "OS", "DBMS", "Python", "Java", "Networks"],
-        "ECE": ["Signals", "Electronics", "Microprocessor", "Comm Systems", "Maths", "Physics"],
-        "Biotechnology": ["Genetics", "Biochemistry", "Microbiology", "Cell Biology", "Chemistry", "Physics"],
-        "AIDS": ["AI Basics", "Data Science", "Python Programming", "Statistics", "ML Algorithms", "Project Work"],
-        "IT": ["Networking", "Python", "Web Dev", "DBMS", "Linux", "Cyber Security"],
-        "AIML": ["AI Fundamentals", "Machine Learning", "Deep Learning", "Python Programming", "Data Analytics", "Project Work"],
-        "EEE": ["Circuits", "Electronics", "Power Systems", "Control Systems", "Electrical Machines", "Instrumentation"],
-        "Mechanical": ["Thermodynamics", "Mechanics", "Machine Design", "CAD", "Materials Science", "Manufacturing Processes"],
-        "Civil": ["Surveying", "Concrete Technology", "Structural Analysis", "Fluid Mechanics", "Construction Management", "Design Project"]
-    }
-    subjects = college_subjects[department]
-
-# ---------------- ENTER MARKS ----------------
-st.subheader("📘 Enter Marks")
-marks = {}
-for sub in subjects:
-    marks[sub] = st.number_input(sub, 0, 100, key=sub)
-
-# ---------------- GRADE LOGIC ----------------
-def grade_calc(mark):
-    if mark >= 90: return "A+", "Pass", colors.HexColor("#66ff66") # Bright Green
-    elif mark >= 75: return "A", "Pass", colors.HexColor("#99ff99") # Light Green
-    elif mark >= 60: return "B", "Pass", colors.HexColor("#ffff99") # Yellow
-    elif mark >= 50: return "C", "Pass", colors.HexColor("#ffcc99") # Orange
-    else: return "D", "Fail", colors.HexColor("#ff6666")           # Red
+# ---------------- MARK INPUT ----------------
+st.subheader("✍️ Enter Marks")
+marks = {s: st.number_input(s, 0, 100, key=s) for s in subjects}
 
 # ---------------- GENERATE MARKSHEET ----------------
-if st.button("📄 Generate Official Marksheet"):
-    total = sum(marks.values())
-    avg = total / len(subjects)
+if st.button("📄 Generate Marksheet"):
 
-    # ---------- STREAMLIT TABLE ----------
+    df = pd.DataFrame({
+        "Subject": subjects,
+        "Marks": marks.values()
+    })
+    df["Grade"] = df["Marks"].apply(grade)
+    df["Result"] = df["Marks"].apply(lambda x: "✅ PASS" if x >= 40 else "❌ FAIL")
+
+    total = df["Marks"].sum()
+    avg = df["Marks"].mean()
+
     st.subheader("📊 Marksheet Preview")
-    table_display = [["Subject","Marks","Grade","Result"]]
-    for sub in subjects:
-        g,r,_ = grade_calc(marks[sub])
-        table_display.append([sub, marks[sub], g, r])
-    st.table(table_display)
+    # Colorful table
+    def highlight(val):
+        color = '#90ee90' if val >= 40 else '#ff7f7f'
+        return f'background-color: {color}'
+    st.dataframe(df.style.applymap(highlight, subset=["Marks"]))
 
-    # ---------- PDF GENERATION ----------
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        pdf_path = tmp.name
+    st.success(f"Total Marks: {total}")
+    st.info(f"Average: {avg:.2f}%")
 
-    doc = SimpleDocTemplate(pdf_path, pagesize=A4)
-    styles = getSampleStyleSheet()
-    elements = []
+    # Remark
+    if avg>=75: remark="🌟 Excellent performance"
+    elif avg>=50: remark="👍 Good, can improve"
+    else: remark="⚠️ Needs improvement"
+    st.warning(f"Teacher Remark: {remark}")
 
-    # ---------- HEADER ----------
-    elements.append(Paragraph(f"<font size=18 color='#00695c'><b>{school_name}</b></font>", styles["Title"]))
-    elements.append(Spacer(1,6))
-    elements.append(Paragraph("<b>Annual Examination Marksheet</b>", styles["Heading2"]))
-    elements.append(Spacer(1,10))
+    # ---------------- PDF GENERATION ----------------
+    def build_pdf():
+        file="marksheet.pdf"
+        doc=SimpleDocTemplate(file)
+        styles=getSampleStyleSheet()
+        elems=[]
 
-    # Photo Top-Right
-    if photo:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as img_tmp:
-            img_tmp.write(photo.getvalue())
-            elements.append(Image(img_tmp.name, width=80, height=80))
+        elems.append(Paragraph(f"<b>{inst_name}</b>", styles["Title"]))
+        elems.append(Paragraph(inst_addr, styles["Normal"]))
+        elems.append(Paragraph(f"Academic Year: {year}", styles["Normal"]))
+        elems.append(Paragraph("<br/>", styles["Normal"]))
 
-    # Student Info
-    info_text = f"""
-    <b>Name:</b> {student_name}<br/>
-    <b>Register No:</b> {register_no}<br/>
-    <b>DOB:</b> {dob}<br/>
-    <b>Father:</b> {father_name}<br/>
-    <b>Mother:</b> {mother_name}<br/>
-    <b>Attendance:</b> {attendance}%
-    """
-    elements.append(Paragraph(info_text, styles["Normal"]))
-    elements.append(Spacer(1,10))
+        elems.append(Paragraph(f"Name: {name}", styles["Normal"]))
+        elems.append(Paragraph(f"Roll No: {roll}", styles["Normal"]))
+        elems.append(Paragraph(f"Attendance: {attendance}%", styles["Normal"]))
+        elems.append(Paragraph(f"Parent Contact: {parent_mobile}", styles["Normal"]))
+        elems.append(Paragraph(f"Email: {parent_email}", styles["Normal"]))
 
-    # ---------- TABLE ----------
-    data = [["Subject","Marks","Grade","Pass/Fail"]]
-    row_colors = []
-    for sub in subjects:
-        g,r,c = grade_calc(marks[sub])
-        data.append([sub, str(marks[sub]), g, r])
-        row_colors.append(c)
+        if photo:
+            with tempfile.NamedTemporaryFile(delete=False) as t:
+                t.write(photo.read())
+                elems.append(Image(t.name, width=90, height=110))
 
-    table = Table(data, colWidths=[140,50,50,70])
-    style = TableStyle([
-        ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#4db6ac")), # Teal header
-        ("TEXTCOLOR",(0,0),(-1,0),colors.white),
-        ("ALIGN",(0,0),(-1,-1),"CENTER"),
-        ("GRID",(0,0),(-1,-1),0.8,colors.HexColor("#80cbc4")),
-        ("BOX",(0,0),(-1,-1),1,colors.HexColor("#4db6ac"))
-    ])
-    for i,color in enumerate(row_colors,start=1):
-        style.add("BACKGROUND",(0,i),(-1,i),color)
-    table.setStyle(style)
-    elements.append(table)
+        table_data=[["Subject","Marks","Grade","Result"]]+df.values.tolist()
+        table=Table(table_data)
+        table.setStyle(TableStyle([
+            ("BACKGROUND",(0,0),(-1,0),colors.lightpink),
+            ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+            ("GRID",(0,0),(-1,-1),1,colors.black)
+        ]))
+        elems.append(table)
+        elems.append(Paragraph(f"<b>Teacher Remark:</b> {remark}", styles["Normal"]))
+        doc.build(elems)
+        return file
 
-    # Totals
-    elements.append(Spacer(1,10))
-    elements.append(Paragraph(f"<b>Total:</b> {total} &nbsp;&nbsp; <b>Average:</b> {avg:.2f}", styles["Normal"]))
-    elements.append(Spacer(1,10))
+    pdf = build_pdf()
+    with open(pdf,"rb") as f:
+        st.download_button("⬇️ Download Marksheet PDF", f, "marksheet.pdf")
 
-    # Legend
-    legend_data = [
-        ["Legend","Color Meaning"],
-        ["A+/A","Excellent"],
-        ["B","Good"],
-        ["C","Average"],
-        ["D","Fail"]
-    ]
-    legend_colors = [colors.lightgrey, colors.HexColor("#66ff66"), colors.HexColor("#ffff99"), colors.HexColor("#ffcc99"), colors.HexColor("#ff6666")]
-    legend_table = Table(legend_data, colWidths=[80,150])
-    legend_style = TableStyle([
-        ("GRID",(0,0),(-1,-1),0.5,colors.HexColor("#80cbc4")),
-        ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#4db6ac")),
-        ("TEXTCOLOR",(0,0),(-1,0),colors.white),
-        ("ALIGN",(0,0),(-1,-1),"CENTER")
-    ])
-    for i,color in enumerate(legend_colors,start=1):
-        legend_style.add("BACKGROUND",(0,i),(-1,i),color)
-    legend_table.setStyle(legend_style)
-    elements.append(legend_table)
+    # ---------------- EMAIL ----------------
+    if st.checkbox("📧 Email PDF to Parent"):
+        try:
+            msg=EmailMessage()
+            msg["Subject"]="Student Marksheet"
+            msg["From"]="your_email@gmail.com"
+            msg["To"]=parent_email
+            msg.set_content("Attached marksheet")
 
-    doc.build(elements)
+            with open(pdf,"rb") as f:
+                msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename="marksheet.pdf")
 
-    # ---------- DOWNLOAD ----------
-    with open(pdf_path,"rb") as f:
-        pdf_bytes = f.read()
-    st.success("✅ Official PDF Marksheet Generated")
-    st.download_button("⬇ Download PDF", pdf_bytes, f"{student_name}_marksheet.pdf", "application/pdf")
+            server=smtplib.SMTP_SSL("smtp.gmail.com",465)
+            server.login("your_email@gmail.com","APP_PASSWORD")
+            server.send_message(msg)
+            server.quit()
+            st.success("Email sent successfully")
+        except:
+            st.error("Email failed")
