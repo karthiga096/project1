@@ -8,7 +8,7 @@ from reportlab.lib import colors
 # ---------------- EMAILJS CONFIG ----------------
 EMAILJS_SERVICE_ID = "service_f6ej3bf"
 EMAILJS_TEMPLATE_ID = "template_wquuig"
-EMAILJS_PUBLIC_KEY = "FHpdQbl_lVBlz9m8e"
+EMAILJS_PUBLIC_KEY = "r9mMc0nLX2CNn-XB2"
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
@@ -17,7 +17,7 @@ st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 st.markdown("""
 <style>
 body {background-color: #f0f8ff;}
-h1, h2, h3 {color: #1f4e79;}
+h1,h2,h3 {color: #1f4e79;}
 .stButton>button {background-color:#1f4e79;color:white;border-radius:10px;}
 .stTextInput input,.stNumberInput input,.stSelectbox div {background:white;color:black;}
 table,th,td {color:black;}
@@ -45,7 +45,7 @@ c1, c2 = st.columns([3,1])
 with c1:
     name = st.text_input("Student Name")
     roll = st.text_input("Roll Number")
-    attendance = st.number_input("Attendance Percentage", 0, 100)
+    attendance = st.number_input("Attendance %", 0, 100)
     parent_mobile = st.text_input("Parent Mobile Number")
     parent_email = st.text_input("Parent Email")
 with c2:
@@ -146,8 +146,13 @@ def send_email(parent_email, pdf_path):
         }
     }
 
-    r = requests.post("https://api.emailjs.com/api/v1.0/email/send", json=payload)
-    return r.status_code == 200
+    try:
+        r = requests.post("https://api.emailjs.com/api/v1.0/email/send", json=payload)
+        st.text(f"EmailJS Response: {r.status_code} - {r.text}")  # debug
+        return r.status_code == 200
+    except Exception as e:
+        st.error(f"Error sending email: {e}")
+        return False
 
 # ---------------- BUTTONS ----------------
 if st.button("📄 Download Marksheet PDF"):
