@@ -1,164 +1,58 @@
 import streamlit as st
-import pandas as pd
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
-import tempfile
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
-import base64
+from twilio.rest import Client
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
+# ------------------ TWILIO CONFIG ------------------
+ACCOUNT_SID = "ACf4037714656734c48983a372cae90430"
+AUTH_TOKEN = "0d39eef3e8c7d19c2b91a4f25c071df5"
+TWILIO_NUMBER = "+15707768661"   # Your Twilio phone number
 
-# ---------------- CUSTOM THEME ----------------
-st.markdown("""
-<style>
-body {background-color: #f0f8ff; font-family: Arial;}
-h1,h2,h3 {color:#1f4e79;}
-.stButton>button {background-color:#1f4e79;color:white;border-radius:10px;height:35px;}
-.stTextInput input,.stNumberInput input,.stSelectbox div {background:white;color:black;}
-</style>
-""", unsafe_allow_html=True)
+# ------------------ SMS FUNCTION ------------------
+def send_sms(parent_mobile, student_name, marks):
+    client = Client(ACCOUNT_SID, AUTH_TOKEN)
 
-st.markdown("<h1 style='text-align:center;'>📘 STUDENT MARKSHEET PORTAL</h1>", unsafe_allow_html=True)
+    total = 0
+    message = f"📘 MARKSHEET\nStudent: {student_name}\n\n"
 
-# ---------------- FUNCTIONS ----------------
-def grade(m):
-    if m >= 90: return "A+"
-    elif m >= 80: return "A"
-    elif m >= 70: return "B+"
-    elif m >= 60: return "B"
-    elif m >= 50: return "C"
-    elif m >= 40: return "D"
-    else: return "F"
+    for subject, mark in marks.items():
+        message += f"{subject}: {mark}\n"
+        total += mark
 
-# ---------------- STUDENT TYPE ----------------
-student_type = st.selectbox("Select Student Type", ["School Student","College Student"])
+    result = "PASS" if total >= 150 else "FAIL"
 
-# ---------------- STUDENT DETAILS ----------------
-st.subheader("👤 Student Details")
-c1, c2 = st.columns([3,1])
-with c1:
-    name = st.text_input("Student Name")
-    roll = st.text_input("Roll Number")
-    attendance = st.number_input("Attendance %", 0, 100)
-    parent_email = st.text_input("Parent Email")
-with c2:
-    photo = st.file_uploader("Upload Student Photo", ["jpg","png"])
-    if photo:
-        st.image(photo, width=120)
+    message += f"\nTotal: {total}\nResult: {result}\n\n- School Management"
 
-# ---------------- SUBJECTS ----------------
-if student_type == "School Student":
-    group = st.selectbox("Group", ["Biology","Computer Science","Commerce","History"])
-    subject_map = {
-        "Biology": ["Tamil","English","Maths","Physics","Chemistry","Biology"],
-        "Computer Science": ["Tamil","English","Maths","Physics","Chemistry","Computer Science"],
-        "Commerce": ["Tamil","English","Accountancy","Economics","Commerce","Maths"],
-        "History": ["Tamil","English","History","Civics","Geography","Economics"]
-    }
-    subjects = subject_map[group]
-else:
-    dept = st.selectbox("Department", ["CSE","ECE","Biotechnology"])
-    sem = st.selectbox("Semester", [f"Semester {i}" for i in range(1,9)])
-    dept_map = {
-        "CSE": ["Maths","Python","DSA","OS","DBMS","Networks"],
-        "ECE": ["Maths","Circuits","Signals","VLSI","Embedded","Control"],
-        "Biotechnology": ["Biochem","Genetics","Microbiology","Immunology","Bioinformatics","Bioprocess"]
-    }
-    subjects = dept_map[dept]
-
-# ---------------- MARK INPUT ----------------
-st.subheader("✍️ Enter Marks")
-marks = {}
-for s in subjects:
-    marks[s] = st.number_input(s, 0, 100, step=1, key=s)
-
-# ---------------- MARKSHEET DATA ----------------
-df = pd.DataFrame({
-    "Subject": subjects,
-    "Marks": marks.values()
-})
-df["Grade"] = df["Marks"].apply(grade)
-df["Result"] = df["Marks"].apply(lambda x: "PASS" if x>=40 else "FAIL")
-
-total = df["Marks"].sum()
-average = df["Marks"].mean()
-remark = "🌟 Excellent" if average>=75 else "👍 Good, can improve" if average>=50 else "⚠️ Needs Improvement"
-
-st.subheader("📊 Marksheet Preview")
-st.dataframe(df)
-st.success(f"Total: {total}")
-st.info(f"Average: {average:.2f}%")
-st.warning(f"Teacher Remark: {remark}")
-
-# ---------------- PDF GENERATION ----------------
-def build_pdf():
-    file = "marksheet.pdf"
-    doc = SimpleDocTemplate(file)
-    styles = getSampleStyleSheet()
-    elems = []
-
-    elems.append(Paragraph("<b>STUDENT MARKSHEET</b>", styles["Title"]))
-    elems.append(Paragraph(f"Name: {name}", styles["Normal"]))
-    elems.append(Paragraph(f"Roll No: {roll}", styles["Normal"]))
-    elems.append(Paragraph(f"Attendance: {attendance}%", styles["Normal"]))
-    elems.append(Paragraph(f"Parent Email: {parent_email}", styles["Normal"]))
-    elems.append(Paragraph("<br/>", styles["Normal"]))
-
-    if photo:
-        with tempfile.NamedTemporaryFile(delete=False) as t:
-            t.write(photo.read())
-            elems.append(Image(t.name, width=90, height=110))
-
-    table_data = [["Subject","Marks","Grade","Result"]] + df.values.tolist()
-    table = Table(table_data)
-    table.setStyle(TableStyle([
-        ("BACKGROUND",(0,0),(-1,0),colors.lightblue),
-        ("GRID",(0,0),(-1,-1),1,colors.grey)
-    ]))
-    elems.append(table)
-    elems.append(Paragraph(f"Teacher Remark: {remark}", styles["Normal"]))
-    doc.build(elems)
-    return file
-
-# ---------------- SEND EMAIL USING SENDGRID ----------------
-def send_email_sendgrid(to_email, pdf_path):
-    with open(pdf_path,'rb') as f:
-        data = f.read()
-        encoded_file = base64.b64encode(data).decode()
-
-    message = Mail(
-        from_email='your_verified_sendgrid_email@domain.com',  # replace with your verified sender
-        to_emails=to_email,
-        subject=f"{name} Marksheet",
-        html_content=f"Dear Parent,<br><br>Please find attached marksheet of {name}.<br><br>Regards,<br>School"
+    client.messages.create(
+        body=message,
+        from_=TWILIO_NUMBER,
+        to=parent_mobile
     )
 
-    attachment = Attachment(
-        FileContent(encoded_file),
-        FileName('marksheet.pdf'),
-        FileType('application/pdf'),
-        Disposition('attachment')
-    )
-    message.attachment = attachment
+# ------------------ STREAMLIT UI ------------------
+st.set_page_config(page_title="Student Marksheet SMS", page_icon="📘")
+st.title("🎓 Student Marksheet SMS System")
 
-    try:
-        sg = SendGridAPIClient('SG.CL986OjdQU6yFGlWr5vzRA.nLivv-hVUrhyuuTAB5E_mMd-PlUl3NNnfLaUUAh86PMCopied!')  # replace with your SendGrid API key
-        sg.send(message)
-        st.success("✅ Marksheet sent successfully via Email!")
-        return True
-    except Exception as e:
-        st.error(f"❌ Email sending failed: {e}")
-        return False
+st.subheader("Student Details")
+student_name = st.text_input("Student Name")
+parent_mobile = st.text_input("Parent Mobile Number (+91...)")
 
-# ---------------- BUTTONS ----------------
-if st.button("📄 Download PDF"):
-    pdf_file = build_pdf()
-    with open(pdf_file,"rb") as f:
-        st.download_button("⬇️ Download Marksheet", f, "marksheet.pdf")
+st.subheader("Enter Marks")
+maths = st.number_input("Maths", 0, 100)
+science = st.number_input("Science", 0, 100)
+english = st.number_input("English", 0, 100)
 
-if st.button("📧 Send Marksheet to Parent Email"):
-    pdf_file = build_pdf()
-    send_email_sendgrid(parent_email, pdf_file)
+if st.button("📲 Send Marksheet SMS"):
+    if student_name == "" or parent_mobile == "":
+        st.error("Please fill all details")
+    else:
+        marks = {
+            "Maths": maths,
+            "Science": science,
+            "English": english
+        }
+
+        try:
+            send_sms(parent_mobile, student_name, marks)
+            st.success("✅ Marksheet SMS sent to parent successfully!")
+        except Exception as e:
+            st.error("❌ Failed to send SMS")
+            st.write(e)
