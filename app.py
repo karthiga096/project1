@@ -10,7 +10,7 @@ client = Client(account_sid, auth_token)
 
 # Student and parent details
 student_name = "Karthika"
-parent_number = "+918667515598"  # Parent's phone number
+parent_number = "+917639964635"  # Parent's phone number
 marks = {
     "Maths": 95,
     "Science": 88,
