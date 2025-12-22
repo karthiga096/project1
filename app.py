@@ -6,9 +6,9 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
 # ---------------- EMAILJS CONFIG ----------------
-EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID"
-EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"
-EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY"
+EMAILJS_SERVICE_ID = "service_f6ej3bf"
+EMAILJS_TEMPLATE_ID = "template_wquuig"
+EMAILJS_PUBLIC_KEY = "FHpdQbl_lVBlz9m8e"
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
@@ -93,7 +93,7 @@ average = df["Marks"].mean()
 st.subheader("📊 Marksheet Preview")
 st.dataframe(df)
 
-remark = "Excellent" if average >= 75 else "Good" if average >= 50 else "Needs Improvement"
+remark = "🌟 Excellent" if average >= 75 else "👍 Good, can improve" if average >= 50 else "⚠️ Needs Improvement"
 st.success(f"Total: {total}")
 st.info(f"Average: {average:.2f}%")
 st.warning(f"Teacher Remark: {remark}")
@@ -132,7 +132,7 @@ def build_pdf():
 # ---------------- EMAIL SEND ----------------
 def send_email(parent_email, pdf_path):
     with open(pdf_path, "rb") as f:
-        encoded = base64.b64encode(f.read()).decode()
+        encoded_pdf = base64.b64encode(f.read()).decode()
 
     payload = {
         "service_id": EMAILJS_SERVICE_ID,
@@ -142,11 +142,11 @@ def send_email(parent_email, pdf_path):
             "to_email": parent_email,
             "student_name": name,
             "message": "Please find attached marksheet.",
-            "attachment": encoded
+            "attachment": encoded_pdf
         }
     }
 
-    r = requests.post("FHpdQbl_lVBlz9m8e", json=payload)
+    r = requests.post("https://api.emailjs.com/api/v1.0/email/send", json=payload)
     return r.status_code == 200
 
 # ---------------- BUTTONS ----------------
@@ -156,8 +156,11 @@ if st.button("📄 Download Marksheet PDF"):
         st.download_button("⬇️ Download PDF", f, "marksheet.pdf")
 
 if st.button("📧 Send Marksheet to Parent Email"):
-    pdf = build_pdf()
-    if send_email(parent_email, pdf):
-        st.success("📨 Marksheet sent successfully to parent email")
+    if not parent_email:
+        st.error("Please enter parent email")
     else:
-        st.error("❌ Email sending failed")
+        pdf = build_pdf()
+        if send_email(parent_email, pdf):
+            st.success("📨 Marksheet sent successfully to parent email")
+        else:
+            st.error("❌ Failed to send email. Check EmailJS configuration.")
