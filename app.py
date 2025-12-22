@@ -1,152 +1,242 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from fpdf import FPDF
-from io import BytesIO
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle,
+    Paragraph, Image, Spacer
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+import tempfile
 
-# ================= PAGE CONFIG =================
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 
-# ================= CUSTOM CSS =================
+# ---------------- GLOBAL STYLES ----------------
 st.markdown("""
 <style>
-body {
-    background: linear-gradient(to right, #E3F2FD, #FFFFFF);
-}
-.card {
-    background-color: #FFFFFF;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-}
-h1, h2, h3 {
-    color: #0D47A1;
+.stApp { background-color: #f4f6f8; }
+.section-box {
+    background: #ffffff;
+    padding: 18px;
+    border-radius: 8px;
+    border: 1px solid #cccccc;
+    margin-bottom: 16px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align:center;'>🎓 Student Marksheet Portal</h1>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align:center;'>📘 Student Marksheet Portal</h2>", unsafe_allow_html=True)
 
-# ================= STUDENT DETAILS =================
-st.markdown("<div class='card'>", unsafe_allow_html=True)
+# ---------------- FUNCTIONS ----------------
+def get_grade(m):
+    if m >= 90: return "O"
+    elif m >= 80: return "A+"
+    elif m >= 70: return "A"
+    elif m >= 60: return "B"
+    elif m >= 50: return "C"
+    elif m >= 40: return "D"
+    else: return "F"
+
+def grade_point(grade):
+    mapping = {
+        "O": 10,
+        "A+": 9,
+        "A": 8,
+        "B": 7,
+        "C": 6,
+        "D": 5,
+        "F": 0
+    }
+    return mapping.get(grade, 0)
+
+def overall_result(fails):
+    if fails == 0:
+        return "🎉🙂 Excellent Performance"
+    elif fails <= 2:
+        return "⚠️😐 Needs Improvement"
+    else:
+        return "❌😞 Serious Improvement Required"
+
+def teacher_remark(fails, avg):
+    if fails == 0 and avg >= 75:
+        return "🌟 Excellent academic performance. Keep it up!"
+    elif fails == 0:
+        return "Good effort. Performance can improve with consistency."
+    elif fails <= 2:
+        return "Needs improvement in weak subjects. Extra guidance recommended."
+    else:
+        return "Requires serious academic focus and regular mentoring."
+
+# ---------------- INSTITUTE DETAILS ----------------
+st.markdown('<div class="section-box">', unsafe_allow_html=True)
+st.subheader("🏫 Institute Details")
+
+col_logo, col_name = st.columns([1, 5])
+with col_logo:
+    logo = st.file_uploader("Institute Logo", ["png", "jpg"])
+    if logo:
+        st.image(logo, width=90)
+
+with col_name:
+    inst_name = st.text_input("Institute Name")
+    academic_year = st.text_input("Academic Year", "2024–2025")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------- STUDENT DETAILS ----------------
+st.markdown('<div class="section-box">', unsafe_allow_html=True)
 st.subheader("👤 Student Details")
 
-student_type = st.selectbox("Student Type", ["School Student", "College Student"])
-
-col1, col2 = st.columns(2)
-with col1:
+c1, c2, c3 = st.columns([2,2,1])
+with c1:
     name = st.text_input("Student Name")
-    roll = st.text_input("Roll / Register Number")
-with col2:
-    attendance = st.number_input("Attendance Percentage", 0, 100)
-    parent_email = st.text_input("Parent Email")
+    reg_no = st.text_input("Register Number")
+with c2:
+    dob = st.date_input("Date of Birth")
+    attendance = st.number_input("Attendance (%)", 0, 100, 75)
+    parent_mobile = st.text_input("Parent Mobile")
+with c3:
+    photo = st.file_uploader("Student Photo", ["png", "jpg"])
+    if photo:
+        st.image(photo, width=90)
 
-st.markdown("</div>", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-# ================= FUNCTIONS =================
-def pass_fail(mark):
-    return "Pass" if mark >= 35 else "Fail"
+# ---------------- SUBJECTS ----------------
+subjects = ["Tamil", "English", "Maths", "Physics", "Chemistry", "Computer Science"]
+max_marks = 100
 
-def grade(mark):
-    if mark >= 90: return "A+"
-    elif mark >= 80: return "A"
-    elif mark >= 70: return "B+"
-    elif mark >= 60: return "B"
-    elif mark >= 50: return "C"
-    else: return "D"
+st.markdown('<div class="section-box">', unsafe_allow_html=True)
+st.subheader("✍️ Marks Entry")
 
-def remark(mark):
-    if mark >= 75: return "Excellent"
-    elif mark >= 50: return "Good"
-    else: return "Needs Improvement"
+marks = {}
+cols = st.columns(3)
+for i, s in enumerate(subjects):
+    with cols[i % 3]:
+        marks[s] = st.number_input(s, 0, max_marks)
 
-df = None
-subjects, marks = [], []
+st.markdown('</div>', unsafe_allow_html=True)
 
-# ================= SCHOOL MODULE =================
-if student_type == "School Student":
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("🏫 School Academic Details")
+# ---------------- GENERATE MARKSHEET ----------------
+if st.button("📄 Generate Marksheet"):
 
-    group = st.selectbox("Group", ["Biology", "Computer Science", "Commerce", "Arts"])
+    df = pd.DataFrame({
+        "Subject": subjects,
+        "Marks Obtained": marks.values(),
+        "Max Marks": [max_marks]*len(subjects)
+    })
 
-    subjects_map = {
-        "Biology": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Biology"],
-        "Computer Science": ["Tamil", "English", "Maths", "Physics", "Chemistry", "Computer Science"],
-        "Commerce": ["Tamil", "English", "Accountancy", "Economics", "Commerce", "Maths"],
-        "Arts": ["Tamil", "English", "History", "Civics", "Geography", "Economics"]
-    }
+    df["Grade"] = df["Marks Obtained"].apply(get_grade)
+    df["Grade Point"] = df["Grade"].apply(grade_point)
+    df["Result"] = df["Marks Obtained"].apply(lambda x: "PASS" if x >= 40 else "FAIL")
 
-    subjects = subjects_map[group]
+    total = df["Marks Obtained"].sum()
+    total_max = df["Max Marks"].sum()
+    avg = total / len(subjects)
+    cgpa = df["Grade Point"].mean()
+    fails = (df["Result"] == "FAIL").sum()
 
-    for sub in subjects:
-        marks.append(st.number_input(sub, 0, 100, key=sub))
+    overall = overall_result(fails)
+    remark = teacher_remark(fails, avg)
 
-    if st.button("📊 Generate Marksheet"):
-        df = pd.DataFrame({
-            "Subject": subjects,
-            "Marks": marks,
-            "Grade": [grade(m) for m in marks],
-            "Result": [pass_fail(m) for m in marks],
-            "Remark": [remark(m) for m in marks]
-        })
+    # ---------------- FRONTEND PREVIEW ----------------
+    st.markdown('<div class="section-box">', unsafe_allow_html=True)
+    st.subheader("📊 Marksheet Preview")
 
-        st.success("Marksheet Generated")
-        st.dataframe(df, use_container_width=True)
+    def color_result(val):
+        return "color: green" if val == "PASS" else "color: red"
 
-        st.info(f"Total Marks: {sum(marks)}")
-        st.info(f"Average: {np.mean(marks):.2f}")
+    st.dataframe(df.style.applymap(color_result, subset=["Result"]), use_container_width=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(f"### 🎯 Overall Result: {overall}")
+    st.markdown(f"**Average:** {avg:.2f}%")
+    st.markdown(f"**CGPA:** {cgpa:.2f} / 10")
+    st.markdown(f"**Teacher Remarks:** {remark}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ================= REAL-TIME PDF DOWNLOAD =================
-if df is not None:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("📄 Download Marksheet")
+    # ---------------- PDF GENERATION ----------------
+    def create_pdf():
+        file_path = "marksheet.pdf"
+        doc = SimpleDocTemplate(file_path, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
 
-    if st.button("📥 Generate & Download PDF"):
-        pdf = FPDF()
-        pdf.add_page()
+        header_table = []
+        if logo:
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                tmp.write(logo.read())
+                img = Image(tmp.name, 60, 60)
+                header_table.append([img, Paragraph(f"<b>{inst_name}</b>",
+                    ParagraphStyle("h", alignment=TA_CENTER, fontSize=18, textColor=colors.darkblue))])
+        else:
+            header_table.append(["", Paragraph(f"<b>{inst_name}</b>",
+                ParagraphStyle("h", alignment=TA_CENTER, fontSize=18, textColor=colors.darkblue))])
 
-        pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, "STUDENT MARKSHEET", ln=True, align="C")
-        pdf.ln(5)
+        ht = Table(header_table, colWidths=[70, 440])
+        ht.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "MIDDLE")]))
+        elements.append(ht)
 
-        pdf.set_font("Arial", "", 12)
-        pdf.cell(0, 8, f"Name: {name}", ln=True)
-        pdf.cell(0, 8, f"Roll No: {roll}", ln=True)
-        pdf.cell(0, 8, f"Attendance: {attendance}%", ln=True)
-        pdf.cell(0, 8, f"Parent Email: {parent_email}", ln=True)
-        pdf.ln(5)
+        elements.append(Spacer(1, 8))
+        elements.append(Paragraph(
+            f"<b>ANNUAL EXAMINATION – ACADEMIC YEAR {academic_year}</b>",
+            ParagraphStyle("ay", alignment=TA_CENTER)
+        ))
 
-        pdf.set_font("Arial", "B", 11)
-        pdf.cell(50, 8, "Subject", 1)
-        pdf.cell(25, 8, "Marks", 1)
-        pdf.cell(25, 8, "Grade", 1)
-        pdf.cell(30, 8, "Result", 1)
-        pdf.cell(60, 8, "Remark", 1)
-        pdf.ln()
+        elements.append(Spacer(1, 14))
 
-        pdf.set_font("Arial", "", 11)
-        for _, row in df.iterrows():
-            pdf.cell(50, 8, row["Subject"], 1)
-            pdf.cell(25, 8, str(row["Marks"]), 1)
-            pdf.cell(25, 8, row["Grade"], 1)
-            pdf.cell(30, 8, row["Result"], 1)
-            pdf.cell(60, 8, row["Remark"], 1)
-            pdf.ln()
+        info_data = [
+            ["Name", name, "DOB", str(dob)],
+            ["Register No", reg_no, "Attendance", f"{attendance}%"],
+            ["Parent Mobile", parent_mobile, "", ""]
+        ]
 
-        # REAL-TIME PDF (memory)
-        pdf_bytes = pdf.output(dest="S").encode("latin-1")
+        info_table = Table(info_data, colWidths=[90, 170, 90, 120])
+        info_table.setStyle(TableStyle([("GRID", (0,0), (-1,-1), 1, colors.black)]))
+        elements.append(info_table)
 
-        st.download_button(
-            label="⬇️ Download Marksheet PDF",
-            data=pdf_bytes,
-            file_name="Marksheet.pdf",
-            mime="application/pdf"
-        )
+        if photo:
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                tmp.write(photo.read())
+                img = Image(tmp.name, 80, 100)
+                img.hAlign = "RIGHT"
+                elements.append(img)
 
-        st.success("PDF generated in real time!")
+        elements.append(Spacer(1, 14))
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        table_data = [df.columns.tolist()] + df.values.tolist()
+        subject_table = Table(table_data, colWidths=[120, 80, 70, 60, 70, 60])
+        subject_table.setStyle(TableStyle([
+            ("GRID", (0,0), (-1,-1), 1, colors.black),
+            ("BACKGROUND", (0,0), (-1,0), colors.lightgrey),
+            ("ALIGN", (1,1), (-1,-1), "CENTER")
+        ]))
+        elements.append(subject_table)
+
+        elements.append(Spacer(1, 12))
+
+        summary = f"""
+        <b>Total Marks:</b> {total}/{total_max}<br/>
+        <b>Average:</b> {avg:.2f}%<br/>
+        <b>CGPA:</b> {cgpa:.2f} / 10<br/>
+        <b>Overall Result:</b> {overall}<br/><br/>
+        <b>Teacher Remarks:</b> {remark}
+        """
+        elements.append(Paragraph(summary, styles["Normal"]))
+
+        elements.append(Spacer(1, 30))
+        footer = Table([["Class Teacher", "Parent", "Principal"]], colWidths=[170,170,170])
+        footer.setStyle(TableStyle([
+            ("LINEABOVE", (0,0), (-1,0), 1, colors.black),
+            ("ALIGN", (0,0), (-1,-1), "CENTER")
+        ]))
+        elements.append(footer)
+
+        doc.build(elements)
+        return file_path
+
+    pdf = create_pdf()
+
+    with open(pdf, "rb") as f:
+        st.download_button("⬇️ Download Marksheet PDF", f, "marksheet.pdf")
