@@ -1,14 +1,12 @@
 import streamlit as st
 import pandas as pd
-import requests, base64, tempfile
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
-
-# ---------------- EMAILJS CONFIG ----------------
-EMAILJS_SERVICE_ID = "service_f6ej3bf"
-EMAILJS_TEMPLATE_ID = "template_wquuig"
-EMAILJS_PUBLIC_KEY = "r9mMc0nLX2CNn-XB2"
+import tempfile
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+import base64
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
@@ -16,11 +14,10 @@ st.set_page_config(page_title="Student Marksheet Portal", layout="wide")
 # ---------------- CUSTOM THEME ----------------
 st.markdown("""
 <style>
-body {background-color: #f0f8ff;}
-h1,h2,h3 {color: #1f4e79;}
-.stButton>button {background-color:#1f4e79;color:white;border-radius:10px;}
+body {background-color: #f0f8ff; font-family: Arial;}
+h1,h2,h3 {color:#1f4e79;}
+.stButton>button {background-color:#1f4e79;color:white;border-radius:10px;height:35px;}
 .stTextInput input,.stNumberInput input,.stSelectbox div {background:white;color:black;}
-table,th,td {color:black;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -37,7 +34,7 @@ def grade(m):
     else: return "F"
 
 # ---------------- STUDENT TYPE ----------------
-student_type = st.selectbox("Select Student Type", ["School Student", "College Student"])
+student_type = st.selectbox("Select Student Type", ["School Student","College Student"])
 
 # ---------------- STUDENT DETAILS ----------------
 st.subheader("👤 Student Details")
@@ -46,14 +43,13 @@ with c1:
     name = st.text_input("Student Name")
     roll = st.text_input("Roll Number")
     attendance = st.number_input("Attendance %", 0, 100)
-    parent_mobile = st.text_input("Parent Mobile Number")
     parent_email = st.text_input("Parent Email")
 with c2:
     photo = st.file_uploader("Upload Student Photo", ["jpg","png"])
     if photo:
         st.image(photo, width=120)
 
-# ---------------- SUBJECT SELECTION ----------------
+# ---------------- SUBJECTS ----------------
 if student_type == "School Student":
     group = st.selectbox("Group", ["Biology","Computer Science","Commerce","History"])
     subject_map = {
@@ -73,27 +69,26 @@ else:
     }
     subjects = dept_map[dept]
 
-# ---------------- MARK ENTRY ----------------
+# ---------------- MARK INPUT ----------------
 st.subheader("✍️ Enter Marks")
 marks = {}
 for s in subjects:
     marks[s] = st.number_input(s, 0, 100, step=1, key=s)
 
-# ---------------- MARKSHEET TABLE ----------------
+# ---------------- MARKSHEET DATA ----------------
 df = pd.DataFrame({
     "Subject": subjects,
     "Marks": marks.values()
 })
 df["Grade"] = df["Marks"].apply(grade)
-df["Result"] = df["Marks"].apply(lambda x: "PASS" if x >= 40 else "FAIL")
+df["Result"] = df["Marks"].apply(lambda x: "PASS" if x>=40 else "FAIL")
 
 total = df["Marks"].sum()
 average = df["Marks"].mean()
+remark = "🌟 Excellent" if average>=75 else "👍 Good, can improve" if average>=50 else "⚠️ Needs Improvement"
 
 st.subheader("📊 Marksheet Preview")
 st.dataframe(df)
-
-remark = "🌟 Excellent" if average >= 75 else "👍 Good, can improve" if average >= 50 else "⚠️ Needs Improvement"
 st.success(f"Total: {total}")
 st.info(f"Average: {average:.2f}%")
 st.warning(f"Teacher Remark: {remark}")
@@ -125,47 +120,45 @@ def build_pdf():
     ]))
     elems.append(table)
     elems.append(Paragraph(f"Teacher Remark: {remark}", styles["Normal"]))
-
     doc.build(elems)
     return file
 
-# ---------------- EMAIL SEND ----------------
-def send_email(parent_email, pdf_path):
-    with open(pdf_path, "rb") as f:
-        encoded_pdf = base64.b64encode(f.read()).decode()
+# ---------------- SEND EMAIL USING SENDGRID ----------------
+def send_email_sendgrid(to_email, pdf_path):
+    with open(pdf_path,'rb') as f:
+        data = f.read()
+        encoded_file = base64.b64encode(data).decode()
 
-    payload = {
-        "service_id": EMAILJS_SERVICE_ID,
-        "template_id": EMAILJS_TEMPLATE_ID,
-        "user_id": EMAILJS_PUBLIC_KEY,
-        "template_params": {
-            "to_email": parent_email,
-            "student_name": name,
-            "message": "Please find attached marksheet.",
-            "attachment": encoded_pdf
-        }
-    }
+    message = Mail(
+        from_email='your_verified_sendgrid_email@domain.com',  # replace with your verified sender
+        to_emails=to_email,
+        subject=f"{name} Marksheet",
+        html_content=f"Dear Parent,<br><br>Please find attached marksheet of {name}.<br><br>Regards,<br>School"
+    )
+
+    attachment = Attachment(
+        FileContent(encoded_file),
+        FileName('marksheet.pdf'),
+        FileType('application/pdf'),
+        Disposition('attachment')
+    )
+    message.attachment = attachment
 
     try:
-        r = requests.post("https://api.emailjs.com/api/v1.0/email/send", json=payload)
-        st.text(f"EmailJS Response: {r.status_code} - {r.text}")  # debug
-        return r.status_code == 200
+        sg = SendGridAPIClient('SG.CL986OjdQU6yFGlWr5vzRA.nLivv-hVUrhyuuTAB5E_mMd-PlUl3NNnfLaUUAh86PMCopied!')  # replace with your SendGrid API key
+        sg.send(message)
+        st.success("✅ Marksheet sent successfully via Email!")
+        return True
     except Exception as e:
-        st.error(f"Error sending email: {e}")
+        st.error(f"❌ Email sending failed: {e}")
         return False
 
 # ---------------- BUTTONS ----------------
-if st.button("📄 Download Marksheet PDF"):
-    pdf = build_pdf()
-    with open(pdf,"rb") as f:
-        st.download_button("⬇️ Download PDF", f, "marksheet.pdf")
+if st.button("📄 Download PDF"):
+    pdf_file = build_pdf()
+    with open(pdf_file,"rb") as f:
+        st.download_button("⬇️ Download Marksheet", f, "marksheet.pdf")
 
 if st.button("📧 Send Marksheet to Parent Email"):
-    if not parent_email:
-        st.error("Please enter parent email")
-    else:
-        pdf = build_pdf()
-        if send_email(parent_email, pdf):
-            st.success("📨 Marksheet sent successfully to parent email")
-        else:
-            st.error("❌ Failed to send email. Check EmailJS configuration.")
+    pdf_file = build_pdf()
+    send_email_sendgrid(parent_email, pdf_file)
