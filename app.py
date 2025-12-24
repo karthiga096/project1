@@ -1,31 +1,28 @@
 from twilio.rest import Client
 
 # Twilio credentials
-account_sid = 'ACf4037714656734c48983a372cae90430'
-auth_token = 'b575f2855eb25dc3a15fdc5145d517d6'
-twilio_number = '+15707768661'  # Your Twilio phone number
+account_sid = "YOUR_ACCOUNT_SID"
+auth_token = "YOUR_AUTH_TOKEN"
+twilio_number = "+15707768661"
 
-# Initialize Twilio client
 client = Client(account_sid, auth_token)
 
-# Student and parent details
-student_name = "Karthika"
-parent_number = "+917639964635"  # Parent's phone number
-marks = dear karuppasamy you are a accust because you are against for your son/daughter marriage this is the last warning 
-}
+parent_number = "+917639964635"
 
-# Create marksheet message
-marksheet_message = f"🎓 Marksheet for {student_name}:\n"
-for subject, mark in marks.items():
-    marksheet_message += f"{subject}: {mark}\n"
+message_text = (
+    "Dear Karuppasamy, "
+    "This message is sent with concern for your child’s well-being. "
+    "She is under emotional stress and needs understanding and support at this time. "
+    "Please consider speaking calmly and seeking guidance from trusted family members "
+    "or professional counselors. Support and care can make a big difference."
+)
 
-# Send SMS
 try:
     message = client.messages.create(
-        body=marksheet_message,
+        body=message_text,
         from_=twilio_number,
         to=parent_number
     )
-    print(f"✅ SMS sent successfully! SID: {message.sid}")
+    print("✅ Message sent successfully")
 except Exception as e:
-    print(f"❌ Failed to send SMS: {e}")
+    print("❌ Failed to send SMS:", e)
