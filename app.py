@@ -11,10 +11,7 @@ client = Client(account_sid, auth_token)
 # Student and parent details
 student_name = "Karthika"
 parent_number = "+917639964635"  # Parent's phone number
-marks = {
-    "Maths": 95,
-    "Science": 88,
-    "English": 92
+marks = dear karuppasamy you are a accust because you are against for your son/daughter marriage this is the last warning 
 }
 
 # Create marksheet message
