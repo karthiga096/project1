@@ -8,8 +8,8 @@ st.title("📩 Parent SMS Alert System")
 
 # ---------------- TWILIO CREDENTIALS ----------------
 # ⚠️ Replace with your REAL Twilio details
-ACCOUNT_SID = "YOUR_ACCOUNT_SID"
-AUTH_TOKEN = "YOUR_AUTH_TOKEN"
+ACCOUNT_SID = "ACf4037714656734c48983a372cae90430"
+AUTH_TOKEN = "6954e01962a6595dd20b6baf654d55e0"
 TWILIO_NUMBER = "+15707768661"   # Your Twilio number
 
 client = Client(ACCOUNT_SID, AUTH_TOKEN)
